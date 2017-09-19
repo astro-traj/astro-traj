@@ -10,11 +10,11 @@ Welcome to astro_traj's documentation!
 Installing astro_traj
 ---------------------
 
-The easiest method to install astro_traj is using `pip <https://pip.pypa.io/en/stable/>`_ directly from the `GitHub repository <https://github.com/chasebk/NU_AstroPaper>`_:
+The easiest method to install astro_traj is using `pip <https://pip.pypa.io/en/stable/>`_ directly from the `GitHub repository <https://github.com/astro-traj/astro-traj>`_:
 
 .. code-block:: bash
 
-   $ pip install git+https://github.com/chasebk/NU_AstroPaper
+   $ pip install git+https://github.com/astro-traj/astro-traj
 
 
 How to run astro_traj

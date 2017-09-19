@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) Scott Coughlin (2017)
 #
-# This file is part of gwemlightcurves.
+# This file is part of astro-traj.
 #
-# gwemlightcurves is free software: you can redistribute it and/or modify
+# astro-traj is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# gwemlightcurves is distributed in the hope that it will be useful,
+# astro-traj is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with gwemlightcurves.  If not, see <http://www.gnu.org/licenses/>.
+# along with astro-traj.  If not, see <http://www.gnu.org/licenses/>.
 
-"""`system`
+"""
+Places system described by Mhe, M2, Apre, epre and position r(R,galphi,galcosth) in galaxy model gal
+Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V    
 """
 
 import numpy as np
@@ -28,7 +30,8 @@ from scipy.stats import maxwell
 from scipy.stats import rv_continuous
 from scipy.integrate import quad
 
-__author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+__author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 __all__ = ['System']
 
 class System:

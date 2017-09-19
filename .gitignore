@@ -1,0 +1,19 @@
+# unwanted file-types
+*.pyc
+/*.patch
+*.ipynb_checkpoints
+*output.dat
+# build products
+/astro_traj/version.py
+/build/
+/dist/
+/astro_traj.egg-info
+/.eggs/
+
+# documentation products
+/docs/_build/
+/docs/api/
+
+# test products
+/.cache/
+/.coverage

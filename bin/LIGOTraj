@@ -53,8 +53,8 @@ def parse_commandline():
     """)
     parser.add_argument('-V', '--version', action='version', version=__version__)
     parser.add_argument('--galaxy', help="name of galaxy", required=True)
-    parser.add_argument('--offset', help="offset from center of galaxy of  event", required=True)
-    parser.add_argument('--effective-radius', help="effective radius", required=True)
+    parser.add_argument('--offset', type=float, help="offset from center of galaxy of  event", required=True)
+    parser.add_argument('--effective-radius', type=float, help="effective radius", required=True)
     parser.add_argument('-s', '--filename-samples', help="Path to posterior samples", required=True)
     parser.add_argument('-t', '--telescope', help="Name of telescope", required=True)
     parser.add_argument('-T', '--trials', type=int, default=1, help="Specify the number of trials. Default=1")
@@ -79,24 +79,23 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     4: Energy conservation requirement not met!!!
     """
 
+    # set cosmology to Reiss [h = H0/(100 km/s/Mpc)]
+    h = 0.73
     # Info from "GW"
     GW = constr_dict.GW(samples)
     # Info about the galaxy
-    NGC = constr_dict.galaxy(galaxy_name, samples, r_eff, offset)
+    Galaxy = constr_dict.galaxy(galaxy_name, samples, r_eff, offset, h)
     # Infer about the telescope that made the measurements (for angular resolution)
     tele = constr_dict.telescope(telescope)
 
-    pdb.set_trace()
-
-
     # Calculate angular resolution of the telescope, convert to physical size at the distance of the kilonova
     theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
-    D_theta = NGC['d']*np.tan(theta)                # units of Mpc
-    NGC['offset_uncer'] = D_theta*1000.0            # offset uncertainty due to angular resolution of telescope (kpc)
+    D_theta = Galaxy['d']*np.tan(theta)                # units of Mpc
+    Galaxy['offset_uncer'] = D_theta*1000.0            # offset uncertainty due to angular resolution of telescope (kpc)
 
 
     # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
-    gal=Hernquist_NFW(NGC['Mspiral'], NGC['Mbulge'], NGC['Mhalo'], NGC['R_eff'], h, rcut=100)
+    gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], h, rcut=100)
     samp=Sample(gal)
     # Initialize R
     PDF = samp.initialize_R()
@@ -136,8 +135,6 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         # Sample necessary parameters
         epre = 0.0                                  # assume binary is circularized before SN2
 
-
-        pdb.set_trace()
         # initialize System class with pertinent parameters
         T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, Vkick)
         # implement a SN kick to the system, and check to see if binary is disrupted
@@ -161,7 +158,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         T.doMotion()
 
         # now, see if a successful binary for replicating GW has been created!
-        T.check_success(NGC['offset'], uncer=NGC['offset_uncer'])
+        T.check_success(Galaxy['offset'], uncer=Galaxy['offset_uncer'])
 
         # check for energy conservation, and hold onto highest offset
         T.energy_check()

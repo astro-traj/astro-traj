@@ -74,6 +74,7 @@ class System:
         else: self.omega = np.random.uniform(0,2*np.pi)
 
         self.Mhe, self.M2, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R = Mhe, M2, Mns, Apre, epre, Vkick, gal, R
+        self.Vdot = gal.Vdot
 
     def SN(self):
         """
@@ -99,7 +100,6 @@ class System:
 
         self.flag=0      # set standard flag        
 
-        pdb.set_trace()
         G = C.G.value
         Mhe, M2, Mns, Apre, Vkick, costh, phi = self.Mhe, self.M2, self.Mns, self.Apre, self.Vkick, self.costh, self.phi
 

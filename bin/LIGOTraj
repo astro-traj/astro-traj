@@ -152,6 +152,10 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         T.setTmerge()
         # if binary does not meet inspiral time requirements, move on to next system
         if T.flag == 2:
+            outdata = T.write_data()
+            f = open(args.outfile+'.dat', 'a')
+            f.write(str(outdata)[1:-1]+'\n')
+            f.close()
             continue
 
         # integrate trajectory until Tmerge
@@ -167,11 +171,10 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
 
         # hold onto output data if successful binary is produced
-        if T.flag == 1:
-            outdata = T.write_data()
-            f = open(args.outfile+'.dat', 'a')
-            f.write(str(outdata)[1:-1]+'\n')
-            f.close()
+        outdata = T.write_data()
+        f = open(args.outfile+'.dat', 'a')
+        f.write(str(outdata)[1:-1]+'\n')
+        f.close()
 
 
     ########################

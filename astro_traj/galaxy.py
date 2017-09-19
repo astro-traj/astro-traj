@@ -29,7 +29,7 @@ from scipy.integrate import quad
 import pdb
 
 __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
-__all__ = ['Galaxy_Models']
+__all__ = ['Galaxy_Models', 'Hernquist_NFW', 'Miyamoto_Nagai_NFW', 'Belczynski_2002']
 
 class Galaxy_Models(object):
 

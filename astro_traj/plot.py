@@ -23,6 +23,8 @@ import numpy as np
 import pandas as pd
 import astropy.units as u
 import astropy.constants as C
+from matplotlib import use
+use('agg')
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.mlab import griddata

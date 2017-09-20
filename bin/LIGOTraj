@@ -52,7 +52,7 @@ def parse_commandline():
     parser.add_argument('-V', '--version', action='version', version=__version__)
     parser.add_argument('-o', '--offset', type=float, help="Offset from center of galaxy of event", required=True)
     parser.add_argument('-r', '--effective-radius', type=float, help="Effective radius", required=True)
-    parser.add_argument('-s', '--filename-samples', help="Path to posterior samples", required=True)
+    parser.add_argument('-s', '--samples', help="Path to posterior samples", required=True)
     parser.add_argument('-g', '--galaxy', type=str, default='NGC', help="Name of galaxy that is pulled from the dictionaries in constr_dict.py. Default=NGC")
     parser.add_argument('-t', '--telescope', type=str, default='ESO', help="Name of telescope that is pulled from the dictionaries in constr_dict.py. Default=ESO")
     parser.add_argument('-T', '--trials', type=int, default=1, help="Specify the number of trials. Default=1")
@@ -189,4 +189,4 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
 if __name__ == '__main__':
     args = parse_commandline()
-    main(args.filename_samples, args.galaxy, args.offset, args.effective_radius, args.telescope)
+    main(args.samples, args.galaxy, args.offset, args.effective_radius, args.telescope)

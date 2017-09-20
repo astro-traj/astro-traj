@@ -144,13 +144,8 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         if T.flag == 3:
             continue
 
-        # choose random location on sphere of radius R
-        T.setXYZ_0()
-        # choose random direction for circular velocity, and add SN-imparted velocity to get V0
-        T.setVxyz_0()
-
-        # set merger time as tmax for trajectory integration
-        T.setTmerge()
+        # set merger time for trajectory integration, specify Tmin and Tmax in Gyr
+        T.setTmerge(Tmin=0.0, Tmax=10.0)
         # if binary does not meet inspiral time requirements, move on to next system
         if T.flag == 2:
             outdata = T.write_data()
@@ -158,6 +153,11 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
             f.write(str(outdata)[1:-1]+'\n')
             f.close()
             continue
+
+        # choose random location on sphere of radius R
+        T.setXYZ_0()
+        # choose random direction for circular velocity, and add SN-imparted velocity to get V0
+        T.setVxyz_0()
 
         # integrate trajectory until Tmerge
         T.doMotion()

@@ -280,7 +280,7 @@ class System:
         #Add velocity imparted by SN
         self.Vx0, self.Vy0, self.Vz0 = Vp_rot + vsys
 
-    def setTmerge(self): #NOTE we should check that this matches up with Maggiori equations
+    def setTmerge(self, Tmin=0.0, Tmax=10.0): #NOTE we should check that this matches up with Maggiori equations
         """ 
         Calculate the inspiral time for the binary after the supernova using formulae from Peters 1964
         """
@@ -303,8 +303,8 @@ class System:
         self.Tmerge = Tmerge
 
         # see if binary inspiral time is longer than threshold (10 Gyr) or shorter than minimum time (0 for now)
-        Tmax = 10e9         # years
-        Tmin = 0            # years
+        Tmin = Tmin*1e9         # years
+        Tmax = Tmax*1e9         # years
         if (Tmerge > Tmax * u.year.to(u.s) or Tmerge < Tmin * u.year.to(u.s)):
             self.flag=2   # binary does not meet inspiral time requirements
 
@@ -426,7 +426,7 @@ class System:
         data = [self.M2*u.kg.to(u.M_sun), self.Mns*u.kg.to(u.M_sun), self.Mhe*u.kg.to(u.M_sun), \
                 self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, \
                 self.R*u.m.to(u.kpc), self.galcosth, self.galphi, \
-                self.Vkick*u.m.to(u.km), self.Tmerge*u.s.to(u.yr)/1e9, self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), \
+                self.Vkick*u.m.to(u.km), self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), \
                 self.Vfinal*u.m.to(u.km), self.flag]
         return data
 

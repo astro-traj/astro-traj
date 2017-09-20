@@ -20,6 +20,7 @@
 """
 
 import numpy as np
+import pandas as pd
 import astropy.units as u
 import astropy.constants as C
 from scipy.integrate import ode
@@ -420,3 +421,26 @@ class System:
                 self.Vkick*u.m.to(u.km), self.Tmerge*u.s.to(u.yr)/1e9, self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), \
                 self.Vfinal*u.m.to(u.km), self.flag]
         return data
+
+
+    def save_evolution(self, filename):
+        '''
+        If called, will save the evolution of a given system for plotting orbital trajectory through galaxy
+        Format: [t, X, Y, Z, Vx, Vy, Vz]
+        The initial values are saved as the first item of the file, with time set to a value of -1
+        '''
+        initial = np.atleast_2d(np.hstack([[-1.0],self.RR[3:],self.RR[0:3]])) 
+        evolution = np.vstack([[self.t],[self.X],[self.Y],[self.Z],[self.Vx],[self.Vy],[self.Vz]]).T
+        evolution = np.vstack([initial,evolution])
+        # save evolution
+        df = pd.DataFrame(evolution, columns=['t','x','y','z','vx','vy','vz'])
+
+        # save normal output to same file
+        df['M2'], df['Mns'], df['Mhe'], df['Apre'], df['Apost'], df['epre'], df['epost'] = self.M2, self.Mns, self.Mhe, self.Apre, self.Apost, self.epre, self.epost
+        df['R'], df['galcosth'], df['galphi'], df['Vkick'], df['Tmerge'] = self.R, self.galcosth, self.galphi, self.Vkick, self.Tmerge
+        df['Rmerge'], df['Rmerge_proj'], df['Vfinal'], df['flag'] = self.Rmerge, self.Rmerge_proj, self.Vfinal, self.flag
+
+        # write to csv
+        df.to_csv(filename+'.dat', index=False)
+
+

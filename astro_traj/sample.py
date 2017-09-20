@@ -68,28 +68,35 @@ class Sample:
 
 
     # sample compact binary masses from PE
-    def sample_masses(self, m1, m2, m1_sigma=None, m2_sigma=None, size=None):
+    def sample_masses(self, samples=None, method='posterior', size=None):
         """
-        Samples m1 and m2 from Gaussian distributions.
-        If only m1 and m2 are passed, passes back these values for M2 and Mns.
+        Samples m1 and m2 from posterior distrbution of your favorite PE run.
+        Samples from the posterior samples by default. 
+        Can specify methods 'gaussian' or 'delta_function' to sample using the mean and std of the posterior samples only
         """
 
-        if not m1_sigma:
+        if not samples:
+            raise ValueError("No posterior sample file specified!")
+        
+        samples = Table.read(samples, format='ascii')
+
+        if method=='posterior':
+            m1 = samples['m1'][np.random.randint(0,len(samples['m1']),size)]
+            m2 = samples['m2'][np.random.randint(0,len(samples['m2']),size)]
+            return m1, m2
+
+        elif method=='delta_function':
+            m1 = np.ones(size)*samples['m1'].mean()
+            m2 = np.ones(size)*samples['m2'].mean()
+            return m1, m2
+
+        elif method=='gaussian':
+            m1 = np.random.normal(samples['m1'].mean(), samples['m1'].std(), size)
+            m2 = np.random.normal(samples['m2'].mean(), samples['m2'].std(), size)
             return m1, m2
 
         else: 
-            m1 = np.random.normal(m1, m1_sigma, size)
-            m2 = np.random.normal(m2, m2_sigma, size)
-            return m1, m2
-
-    def sample_masses_posteriors(self, post_samps=None, size=None):
-        if not post_samps:
-            raise ValueError("No posterior sample file specified!")
-        else:
-            samples = Table.read(post_samps, format='ascii')
-            m1 = samples['m1'][np.random.randint(0,len(samples['m1']),size)]
-            m2 = samples['m2'][np.random.randint(0,len(samples['m2']),size)]
-        return m1,m2
+            raise ValueError("Undefined sampling method: %s" % method)
 
 
     # sample semi-major axis

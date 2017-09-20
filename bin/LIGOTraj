@@ -50,11 +50,11 @@ def parse_commandline():
     4: Energy conservation requirement not met!!!
     """)
     parser.add_argument('-V', '--version', action='version', version=__version__)
-    parser.add_argument('--galaxy', help="name of galaxy", required=True)
-    parser.add_argument('--offset', type=float, help="offset from center of galaxy of  event", required=True)
-    parser.add_argument('--effective-radius', type=float, help="effective radius", required=True)
-    parser.add_argument('-s', '--filename-samples', help="Path to posterior samples", required=True)
-    parser.add_argument('-t', '--telescope', help="Name of telescope", required=True)
+    parser.add_argument('-o', '--offset', type=float, help="Offset from center of galaxy of event", required=True)
+    parser.add_argument('-r', '--effective-radius', type=float, help="Effective radius", required=True)
+    parser.add_argument('-s', '--samples', help="Path to posterior samples", required=True)
+    parser.add_argument('-g', '--galaxy', type=str, default='NGC', help="Name of galaxy that is pulled from the dictionaries in constr_dict.py. Default=NGC")
+    parser.add_argument('-t', '--telescope', type=str, default='ESO', help="Name of telescope that is pulled from the dictionaries in constr_dict.py. Default=ESO")
     parser.add_argument('-T', '--trials', type=int, default=1, help="Specify the number of trials. Default=1")
     parser.add_argument('-f', '--outfile', type=str, default='output', help="Name of the output file. Default=output")
     args = parser.parse_args()
@@ -77,6 +77,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     4: Energy conservation requirement not met!!!
     """
 
+    print "\nInitializing galaxy and reading inputs..."
     # set cosmology to Reiss [h = H0/(100 km/s/Mpc)]
     h = 0.73
     # Info from "GW"
@@ -112,23 +113,24 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     dEfrac = 0.0
 
     # Initialize random draws for some parameters based on number of trials
+    print "\nSampling binary parameters..."
+    
+    Mcomp_dist, Mns_dist = samp.sample_masses(samples, method='gaussian', size=Nsys)
+    # (Msun)
 
-    #Mcomp_dist, Mns_dist = samp.sample_masses(GW['m1'], GW['m2'], GW['m1_sigma'], GW['m2_sigma'], size=Nsys)
-    Mcomp_dist, Mns_dist = samp.sample_masses_posteriors(post_samps=samples, size=Nsys)
-    # Msun
+    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, size=Nsys)
+    # (Msun)
 
     Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, size=Nsys)
-    # Rsun
-
-    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist)
-    # Msun
+    # (Rsun)
 
     Vkick_dist = samp.sample_Vkick_maxwellian(size=Nsys)
-    # km/s
+    # (km/s)
 
     R_dist = samp.sample_R(PDF, Nsys)
-    # kpc
+    # (kpc)
 
+    print "\nStarting the evolution of sampled binaries!"
     for R, Mcomp, Mns, Apre, Mhe, Vkick in zip(R_dist, Mcomp_dist, Mns_dist, Apre_dist, Mhe_dist, Vkick_dist):
 
         # Sample necessary parameters
@@ -183,8 +185,8 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
 
     # print maximum energy difference to check for conservation of energy
-    print 'Maximum energy difference between initial post-SN energy and final energy: %.20f' % dEfrac
+    print '\nFinished! Maximum energy difference between initial post-SN energy and final energy: %.20f' % dEfrac
 
 if __name__ == '__main__':
     args = parse_commandline()
-    main(args.filename_samples, args.galaxy, args.offset, args.effective_radius, args.telescope)
+    main(args.samples, args.galaxy, args.offset, args.effective_radius, args.telescope)

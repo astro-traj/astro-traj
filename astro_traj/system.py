@@ -144,6 +144,7 @@ class System:
             Kalogera and Lorimer 2000: http://iopscience.iop.org/article/10.1086/308417/meta
 
             
+            V_He;preSN is the same variable as V_r from Kalogera 1996
             
             """
             Mhe, M2, Mns, Apre, Apost, epost, Vr, Vkick = self.Mhe, self.M2, self.Mns, self.Apre, self.Apost, self.epost, self.Vr, self.Vkick
@@ -168,14 +169,18 @@ class System:
             #while the second inequality yields the minimum kick velocity required to keep the system bound if more than
             #half of the total system mass is lost in the explosion.
 
-            self.SNflag3 = (Vkick/Vr < 1 + (2*Mtot_post/Mtot_pre)**2) and ((Mtot_post/Mtot_pre > 0.5) or (Vkick/Vr>1 - (2*Mtot_post/Mtot_pre)**2))
+            self.SNflag3 = (Vkick/Vr < 1 + np.sqrt(2*Mtot_post/Mtot_pre)) and ((Mtot_post/Mtot_pre > 0.5) or (Vkick/Vr>1 - np.sqrt(2*Mtot_post/Mtot_pre)))
 
             #SNflag4: Eq 26 "An upper limit on the mass of the BH progenitor can be derived from the condition that the
             #azimuthal direction of the kick is real (Fryer & Kalogera 1997)"
             if epost>1: self.SNflag4 = False
             else:
                 kvar=2*(Apost/Apre)-(((Vkick**2)*Apost/(G*Mtot_post))+1)
-                prgmax = -M2+((2*(kvar**2))*(Mtot_post)*(Apre/Apost)/(2*(Apost/Apre)**2*(1-epost**2)-kvar-2*(Apost/Apre)*np.sqrt(1-epost**2)*((Apost/Apre)**2*(1-epost**2)-kvar)))
+
+                tmp1 = kvar**2 * Mtot_post * (Apre/Apost)
+                tmp2 = 2 * (Apost/Apre)**2 * (1-epost**2) - kvar
+                tmp3 = - 2 * (Apost/Apre) * np.sqrt(1-epost**2) * np.sqrt((Apost/Apre)**2 * (1-epost**2) - kvar)
+                prgmax = -M2 + tmp1 / (tmp2 + tmp3)
 
                 self.SNflag4 = Mhe <= prgmax
             # FIX ME: additionally, Kalogera 1996 mentions requirement that NS stars don't collide

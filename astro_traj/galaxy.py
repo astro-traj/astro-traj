@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) Scott Coughlin (2017)
 #
-# This file is part of gwemlightcurves.
+# This file is part of astro-traj
 #
-# gwemlightcurves is free software: you can redistribute it and/or modify
+# astro-traj is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# gwemlightcurves is distributed in the hope that it will be useful,
+# astro-traj is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with gwemlightcurves.  If not, see <http://www.gnu.org/licenses/>.
+# along with astro-traj.  If not, see <http://www.gnu.org/licenses/>.
 
 """`Galaxy_Models` class which includes children `Miyamaoto_Nagai_Hernquist` and `NFW_Hernquist`
 """
@@ -28,7 +28,8 @@ from scipy.stats import rv_continuous
 from scipy.integrate import quad
 import pdb
 
-__author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+__author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>' 
 __all__ = ['Galaxy_Models', 'Hernquist_NFW', 'Miyamoto_Nagai_NFW', 'Belczynski_2002']
 
 class Galaxy_Models(object):
@@ -203,6 +204,7 @@ class Hernquist_NFW(Galaxy_Models):
 
 class Miyamoto_Nagai_NFW(Galaxy_Models):
     """
+    DEVELOPMENT DOES NOT WORK
     Spiral Galaxy with disk and bulge potential from Miyamoto & Nagai 1975 and NFW profile for dark matter
     NOTE: This potential model is not working yet. We only have 1 measurement for the stellar mass component, not a separate bulge and disk mass
     Paper References:

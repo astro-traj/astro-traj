@@ -24,8 +24,6 @@ import pandas as pd
 
 import h5py
 
-import pdb
-
 from astro_traj import __version__
 from astro_traj.system import System
 from astro_traj.galaxy import Hernquist_NFW
@@ -115,20 +113,21 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
     # Initialize random draws for some parameters based on number of trials
 
+    #Mcomp_dist, Mns_dist = samp.sample_masses(GW['m1'], GW['m2'], GW['m1_sigma'], GW['m2_sigma'], size=Nsys)
+    Mcomp_dist, Mns_dist = samp.sample_masses_posteriors(post_samps=samples, size=Nsys)
     # Msun
-    Mcomp_dist, Mns_dist = samp.sample_masses(GW['m1'], GW['m2'], GW['m1_sigma'], GW['m2_sigma'], size=Nsys)
 
-    # Rsun
     Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, size=Nsys)
+    # Rsun
 
-    # Msun
     Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist)
+    # Msun
 
-    # km/s
     Vkick_dist = samp.sample_Vkick_maxwellian(size=Nsys)
+    # km/s
 
-    # kpc
     R_dist = samp.sample_R(PDF, Nsys)
+    # kpc
 
     for R, Mcomp, Mns, Apre, Mhe, Vkick in zip(R_dist, Mcomp_dist, Mns_dist, Apre_dist, Mhe_dist, Vkick_dist):
 
@@ -175,6 +174,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         f = open(args.outfile+'.dat', 'a')
         f.write(str(outdata)[1:-1]+'\n')
         f.close()
+
 
 
     ########################

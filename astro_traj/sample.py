@@ -24,6 +24,7 @@ import astropy.units as u
 import astropy.constants as C
 from scipy.stats import maxwell
 from scipy.stats import rv_continuous
+from astropy.table import Table
 
 __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 __all__ = ['Sample', 'Hernquist_pdf']
@@ -79,6 +80,15 @@ class Sample:
             m1 = np.random.normal(m1, m1_sigma, size)
             m2 = np.random.normal(m2, m2_sigma, size)
             return m1, m2
+
+    def sample_masses_posteriors(self, post_samps=None, size=None):
+        if not post_samps:
+            raise ValueError("No posterior sample file specified!")
+        else:
+            samples = Table.read(post_samps, format='ascii')
+            m1 = samples['m1'][np.random.randint(0,len(samples['m1']),size)]
+            m2 = samples['m2'][np.random.randint(0,len(samples['m2']),size)]
+        return m1,m2
 
 
     # sample semi-major axis

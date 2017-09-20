@@ -76,7 +76,7 @@ class Plot:
         self.Uhalo = gal.Uhalo
 
         if output:
-            outfile = str(output)+'.dat'
+            outfile = output
             data = pd.read_csv(outfile)
             self.data = data
     def getSigOffset(self,d):
@@ -428,3 +428,14 @@ class Plot:
         ax_joint.set_ylabel(y_param)
     
         plt.savefig('vkick_mhe_pdf.png')
+
+
+    def trajectory(self, traj_file):
+        import pdb; pdb.set_trace()
+        df = pd.read_csv(traj_file)
+        return
+
+
+
+
+

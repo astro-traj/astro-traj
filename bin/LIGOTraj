@@ -115,7 +115,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     # Initialize random draws for some parameters based on number of trials
     print "\nSampling binary parameters..."
     
-    Mcomp_dist, Mns_dist = samp.sample_masses(samples, method='gaussian', size=Nsys)
+    Mcomp_dist, Mns_dist = samp.sample_masses(samples, method='posterior', size=Nsys)
     # (Msun)
 
     Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, size=Nsys)

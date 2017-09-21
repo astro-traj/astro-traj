@@ -80,6 +80,7 @@ class System:
 
         self.Mhe, self.M2, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R = Mhe, M2, Mns, Apre, epre, Vkick, gal, R
         self.Vdot = gal.Vdot
+        self.d = d
 
     def SN(self):
         """

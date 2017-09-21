@@ -57,6 +57,13 @@ def parse_commandline():
     parser.add_argument('-t', '--telescope', type=str, default='ESO', help="Name of telescope that is pulled from the dictionaries in constr_dict.py. Default=ESO")
     parser.add_argument('-T', '--trials', type=int, default=1, help="Specify the number of trials. Default=1")
     parser.add_argument('-f', '--outfile', type=str, default='output', help="Name of the output file. Default=output")
+
+    parser.add_argument('--Apre', type=str, default='uniform', help="Specify sampling procedure for initial semi-major axis. Default=uniform")
+    parser.add_argument('--Mhe', type=str, default='uniform', help="Specify sampling procedure for helium star mass. Default=uniform")
+    parser.add_argument('--Vkick', type=str, default='maxwellian', help="Specify sampling procedure for kick velocity. Default=maxwellian")
+    parser.add_argument('--Ms', type=str, default='posterior', help="Specify sampling procedure for NS masses. Default=posterior")
+    parser.add_argument('--epre', type=str, default='circularized', help="Specify sampling procedure for initial eccentricity. Default=circularized")
+    parser.add_argument('--distance', type=str, default='delta_function', help="Specify sampling procedure for the distance. Default=delta_function")
     args = parser.parse_args()
 
     return args
@@ -109,22 +116,22 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     # Initialize random draws for some parameters based on number of trials
     print "\nSampling binary parameters..."
     
-    Mcomp_dist, Mns_dist = samp.sample_masses(samples, method='posterior', size=Nsys)
+    Mcomp_dist, Mns_dist = samp.sample_masses(samples, method=args.Ms, size=Nsys)
     # (Msun)
 
-    d_dist = samp.sample_distance(samples, method='delta_function', size=Nsys)
+    d_dist = samp.sample_distance(samples, method=args.distance, size=Nsys)
     # (Mpc)
 
-    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method='uniform', size=Nsys)
+    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method=args.Mhe, size=Nsys)
     # (Msun)
 
-    Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method='uniform', size=Nsys)
+    Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method=args.Apre, size=Nsys)
     # (Rsun)
 
-    epre_dist = samp.sample_epre(method='circularized', size=Nsys)
+    epre_dist = samp.sample_epre(method=args.epre, size=Nsys)
     # (dimensionless)
 
-    Vkick_dist = samp.sample_Vkick(method='maxwellian', size=Nsys)
+    Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys)
     # (km/s)
 
     R_dist = samp.sample_R(PDF, Nsys)

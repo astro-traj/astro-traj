@@ -41,7 +41,7 @@ class System:
     Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V
     
     """
-    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, Vkick, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
+    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
         """ 
         #Masses in Msun, Apre in Rsun, Vkick in km/s, R in kpc
         #galphi,galcosth,omega, phi, costh (position, initial velocity, and kick angles) sampled randomly, unless specified (>-1)
@@ -61,6 +61,7 @@ class System:
         Apre = Apre*u.R_sun.to(u.m)
         Vkick = Vkick*u.km.to(u.m)
         R = R*u.kpc.to(u.m)
+        d = d*u.Mpc.to(u.m)
 
         if galphi: self.galphi = galphi
         else: self.galphi = np.random.uniform(0,2*np.pi)
@@ -409,7 +410,7 @@ class System:
 
     def write_data(self):
         """
-        # [M2, Mns, Mhe, Apre, Apost, epre, epost, R, galcosth, galphi, Vkick, Tmerge, Rmerge, Rmerge_proj, Vfinal, flag]
+        # [M2, Mns, Mhe, Apre, Apost, epre, epost, d, R, galcosth, galphi, Vkick, Tmerge, Rmerge, Rmerge_proj, Vfinal, flag]
         # write things in reasonable units (e.g., Msun, kpc, km/s ...)
         """
         # in case we wish to save data from other flagged binaries, fill in the blank information with nans
@@ -424,7 +425,7 @@ class System:
             self.Vfinal = np.nan
 
         data = [self.M2*u.kg.to(u.M_sun), self.Mns*u.kg.to(u.M_sun), self.Mhe*u.kg.to(u.M_sun), \
-                self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, \
+                self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, self.d*u.m.to(u.Mpc) \
                 self.R*u.m.to(u.kpc), self.galcosth, self.galphi, \
                 self.Vkick*u.m.to(u.km), self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), \
                 self.Vfinal*u.m.to(u.km), self.flag]
@@ -435,20 +436,16 @@ class System:
         '''
         If called, will save the evolution of a given system for plotting orbital trajectory through galaxy
         Format: [t, X, Y, Z, Vx, Vy, Vz]
-        The initial values are saved as the first item of the file, with time set to a value of -1
+        The initial values are saved as the first item of the file
         '''
-        initial = np.atleast_2d(np.hstack([[-1.0],self.RR[3:],self.RR[0:3]])) 
-        evolution = np.vstack([[self.t],[self.X],[self.Y],[self.Z],[self.Vx],[self.Vy],[self.Vz]]).T
-        evolution = np.vstack([initial,evolution])
+        # save initial conditions
+        initial = np.atleast_2d([self.Vkick,self.Mhe,self.Apre,self.Apost,self.Rmerge,self.Vxcirc0,self.Vycirc0,self.Vzcirc0])
+        dfi = pd.DataFrame(initial, columns=['Vkick','Mhe','Apre','Apost','Rmerge','vx','vy','vz'])
+        dfi.to_csv('evolution/'+filename+'_ini.dat', index=False)        
+
         # save evolution
+        evolution = np.vstack([[self.t],[self.X],[self.Y],[self.Z],[self.Vx],[self.Vy],[self.Vz]]).T
         df = pd.DataFrame(evolution, columns=['t','x','y','z','vx','vy','vz'])
-
-        # save normal output to same file
-        df['M2'], df['Mns'], df['Mhe'], df['Apre'], df['Apost'], df['epre'], df['epost'] = self.M2, self.Mns, self.Mhe, self.Apre, self.Apost, self.epre, self.epost
-        df['R'], df['galcosth'], df['galphi'], df['Vkick'], df['Tmerge'] = self.R, self.galcosth, self.galphi, self.Vkick, self.Tmerge
-        df['Rmerge'], df['Rmerge_proj'], df['Vfinal'], df['flag'] = self.Rmerge, self.Rmerge_proj, self.Vfinal, self.flag
-
-        # write to csv
-        df.to_csv(filename+'.dat', index=False)
+        df.to_csv('evolution/'+filename+'.dat', index=False)
 
 

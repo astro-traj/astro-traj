@@ -102,7 +102,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
 
     # Create empty output file
-    df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'R', 'galcosth', 'galphi', 'Vkick', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'flag'])
+    df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'galcosth', 'galphi', 'Vkick', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'flag'])
     df.to_csv(args.outfile+'.dat', sep=',', index=False)
 
 
@@ -147,7 +147,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         Galaxy['offset_uncer'] = D_theta*u.Mpc.to(u.kpc)   # offset uncertainty from angular resolution of telescope (kpc)
 
         # initialize System class with pertinent parameters
-        T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, Vkick)
+        T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick)
         # implement a SN kick to the system, and check to see if binary is disrupted
         T.SN()
         # if binary is disrupted, move on to next system

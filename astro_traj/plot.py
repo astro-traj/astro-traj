@@ -30,6 +30,7 @@ from sample import Sample
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.mlab import griddata
+from mpl_toolkits.mplot3d import Axes3D
 from scipy.stats import maxwell
 import corner
 import pdb
@@ -431,11 +432,169 @@ class Plot:
 
 
     def trajectory(self, traj_file):
-        import pdb; pdb.set_trace()
         df = pd.read_csv(traj_file)
-        return
+
+        fig = plt.figure()
+        gs = gridspec.GridSpec(8,9)
+        ax_gal = fig.add_subplot(gs[:,:-1])
+        ax_cbar = fig.add_subplot(gs[:,-1])
+
+        # plot stellar background
+        scale = 5.0
+        def rho(r):
+           return 2 * r * self.abulge/C.kpc.value * (self.abulge/C.kpc.value + r)**(-3)
+        def norm(x):
+            return (x-x.min())/(x.max()-x.min())
+
+        x = np.linspace(-1*scale, scale, 200)
+        y = np.linspace(-1*scale, scale, 200)
+        xv, yv = np.meshgrid(x,y)
+        col = rho(np.sqrt(xv.flatten()**2 + yv.flatten()**2))
+        col_norm = norm(col)
+
+        ax_gal.scatter(xv, yv, c=col_norm, cmap='Greys')
+
+        # plot the trajectory of the binary through the galaxy, colored by age
+        age_col = df.iloc[1:]['t']*u.s.to(u.Gyr)
+        pts = ax_gal.scatter(df.iloc[1:]['x']/C.kpc.value, df.iloc[1:]['y']/C.kpc.value, c=age_col, cmap='viridis', s=0.5)
+
+        # plot pre-SN circular orbit
+        # FIXME plot this correctly in 3d...
+        
+        phis = np.linspace(0,2*np.pi,1000)
+        R = np.sqrt((df.iloc[0]['x']/C.kpc.value)**2 + (df.iloc[0]['y']/C.kpc.value)**2)
+        ax_gal.plot(R*np.cos(phis), R*np.sin(phis), color='g', label='initial orbit')
+
+        # plot location of supernova and kilonova
+        ax_gal.scatter(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, marker='*', color='g', s=40, label='SN2')
+        ax_gal.scatter(df.iloc[-1]['x']/C.kpc.value, df.iloc[-1]['y']/C.kpc.value, marker='*', color='r', s=80, label='Merger')
+        #xdir = df.iloc[1]['vx']*C.kpc.value/1000 - df.iloc[0]['vx']*C.kpc.value/1000
+        #ydir = df.iloc[1]['vy']*C.kpc.value/1000 - df.iloc[0]['vy']*C.kpc.value/1000
+        #ax_gal.arrow(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, dx=xdir/C.kpc.value, dy=ydir/C.kpc.value, color='r')
+
+        # add colorbar
+        cbar = fig.colorbar(pts, ticks=[round(age_col.min(),3), round(age_col.max(),3)], cax=ax_cbar, orientation='vertical')
+
+        # label & format
+        ax_gal.set_xlim(-1*scale,scale)
+        ax_gal.set_ylim(-1*scale,scale)
+        ax_gal.set_xlabel(r'$kpc$')
+        ax_gal.set_ylabel(r'$kpc$')
+        cbar.set_label(r'$Gyr$')
+
+        # annotate with apre, vkick, mhe
+
+        ax_gal.legend()
+        plt.tight_layout()
+        plt.savefig('traj.png', dpi=300)
+
+
+    def trajectory_animation(self, traj_file):
+        df = pd.read_csv(traj_file)
+
+        fig = plt.figure()
+        gs = gridspec.GridSpec(8,9)
+        ax_gal = fig.add_subplot(gs[:,:-1])
+        ax_cbar = fig.add_subplot(gs[:,-1])
+
+        # plot stellar background
+        scale = 5.0
+        def rho(r):
+           return 2 * r * self.abulge/C.kpc.value * (self.abulge/C.kpc.value + r)**(-3)
+        def norm(x):
+            return (x-x.min())/(x.max()-x.min())
+
+        x = np.linspace(-1*scale, scale, 200)
+        y = np.linspace(-1*scale, scale, 200)
+        xv, yv = np.meshgrid(x,y)
+        col = rho(np.sqrt(xv.flatten()**2 + yv.flatten()**2))
+        col_norm = norm(col)
+
+        ax_gal.scatter(xv, yv, c=col_norm, cmap='Greys')
+
+        # plot pre-SN circular orbit
+        phis = np.linspace(0,2*np.pi,1000)
+        R = np.sqrt((df.iloc[0]['x']/C.kpc.value)**2 + (df.iloc[0]['y']/C.kpc.value)**2)
+        ax_gal.plot(R*np.cos(phis), R*np.sin(phis), color='g')
+
+        # plot location of supernova and kilonova
+        ax_gal.scatter(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, marker='*', color='g', s=40)
+        #xdir = df.iloc[1]['vx']*C.kpc.value/1000 - df.iloc[0]['vx']*C.kpc.value/1000
+        #ydir = df.iloc[1]['vy']*C.kpc.value/1000 - df.iloc[0]['vy']*C.kpc.value/1000
+        #ax_gal.arrow(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, dx=xdir/C.kpc.value, dy=ydir/C.kpc.value, color='r')
+
+        age_col = df.iloc[1:]['t']*u.s.to(u.Gyr)
+        # label & format
+        ax_gal.set_xlim(-1*scale,scale)
+        ax_gal.set_ylim(-1*scale,scale)
+        ax_gal.set_xlabel(r'$kpc$')
+        ax_gal.set_ylabel(r'$kpc$')
+        plt.tight_layout()
+
+        # plot the trajectory of the binary through the galaxy, colored by age
+        test_pts = ax_gal.scatter(df.iloc[i:i+1]['x']/C.kpc.value, df.iloc[i:i+1]['y']/C.kpc.value, c=age_col, cmap='viridis', s=0.01)
+        cbar = fig.colorbar(test_pts, ticks=[age_col.min(), age_col.max()], cax=ax_cbar, orientation='vertical')
+        cbar.set_label(r'$Gyr$')
+
+        for i in xrange(len(df)):
+            pts = ax_gal.scatter(df.iloc[i:i+1]['x']/C.kpc.value, df.iloc[i:i+1]['y']/C.kpc.value, c=age_col, cmap='viridis', s=0.5)
+            # add colorbar
+            if i == len(df)-1:
+                ax_gal.scatter(df.iloc[-1]['x']/C.kpc.value, df.iloc[-1]['y']/C.kpc.value, marker='*', color='r', s=80)
+            print i
+
+            plt.savefig('movie/traj_'+str(i)+'.png')
+
+        
 
 
 
 
+
+    def trajectory_3d(self, traj_file):
+        df = pd.read_csv(traj_file)
+
+        fig = plt.figure()
+        gs = gridspec.GridSpec(8,9)
+        ax_gal = fig.add_subplot(gs[:,:-1], projection='3d')
+        ax_cbar = fig.add_subplot(gs[:,-1])
+        '''
+        # plot stellar background
+        scale = 5.0
+        def rho(r):
+           return 2 * r * self.abulge/C.kpc.value * (self.abulge/C.kpc.value + r)**(-3)
+        def norm(x):
+            return (x-x.min())/(x.max()-x.min())
+        
+        x = np.linspace(-1*scale, scale, 100)
+        y = np.linspace(-1*scale, scale, 100)
+        z = np.linspace(-1*scale, scale, 100)
+        xv, yv, zv = np.meshgrid(x,y,z)
+        col = rho(np.sqrt(xv.flatten()**2 + yv.flatten()**2 + zv.flatten()**2))
+        col_norm = norm(col)
+
+        ax_gal.scatter(xv, yv, zv, c=col_norm, cmap='Greys', s=0.1)
+        '''
+        # plot the trajectory of the binary through the galaxy, colored by age
+        age_col = df.iloc[1:]['t']*u.s.to(u.Gyr)
+        pts = ax_gal.scatter(df.iloc[1:]['x']/C.kpc.value, df.iloc[1:]['y']/C.kpc.value, df.iloc[1:]['z']/C.kpc.value,c=age_col, cmap='viridis', s=0.5)
+
+        # plot location of supernova and kilonova
+        ax_gal.scatter(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, df.iloc[0]['z']/C.kpc.value, marker='*', color='g', s=40)
+        ax_gal.scatter(df.iloc[-1]['x']/C.kpc.value, df.iloc[-1]['y']/C.kpc.value, df.iloc[-1]['z']/C.kpc.value, marker='*', color='r', s=80)
+
+        # add colorbar
+        cbar = fig.colorbar(pts, ticks=[age_col.min(), age_col.max()], cax=ax_cbar, orientation='vertical')
+
+        # label & format
+        ax_gal.set_xlim(-1*scale,scale)
+        ax_gal.set_ylim(-1*scale,scale)
+        ax_gal.set_zlim(-1*scale,scale)
+        ax_gal.set_xlabel(r'$kpc$')
+        ax_gal.set_ylabel(r'$kpc$')
+        ax_gal.set_zlabel(r'$kpc$')
+        cbar.set_label(r'$Gyr$')
+
+        plt.tight_layout()
+        plt.savefig('traj_3d.png')
 

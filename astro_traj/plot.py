@@ -57,7 +57,7 @@ class Plot:
         # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
         gal=galaxy.Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], h, rcut=100)
         samp=Sample(gal)
-
+        
         self.Galaxy = Galaxy
         self.tele = tele
         self.samp = samp
@@ -79,132 +79,328 @@ class Plot:
             outfile = str(output)+'.dat'
             data = pd.read_csv(outfile)
             self.data = data
-    def getSigOffset(self,d):
-        
-        #d in kpc#
-        theta = 1.22 * 1e-9 * self.tele['lambda'] / self.tele['D']
-        D_theta = self.Galaxy['d']*np.tan(theta)                # units of Mpc
-        SigOffset = D_theta*1000.0            # offset uncertainty due to angular resolution of telescope (kpc)
-        return SigOffset
+    
 
-    def cutTmerge(self,tmin,tmax = None):
+    def cutTmerge(self,Tmerge,tmin,tmax = None):
         #tmin, tmax in Gyr
-        tmin = tmin*u.Gyr.to(u.yr)
+        
         if tmax:
-            tmax = tmax*u.Gyr.to(u.yr)
-            return np.where((self.data['Tmerge'].values>tmin)&(self.data['Tmerge'].values<tmax))[0]
+            return np.where((Tmerge>tmin)&(Tmerge<tmax))[0]
+        else:
+            return np.where(Tmerge>tmin)[0]
+        
+    def getRhe(Mhe):
+        if Mhe<=2.5:
+            return 3.0965-(2.013*np.log10(Mhe))
+        else:
+            return 0.0557*((np.log10(Mhe)-0.172)**-2.5)
+    def getRL(self,Mhe,M2,Apre):
+        epre=np.full(Mhe.shape,0)
+        
+        exp1=1.0/3.0
+        exp2=2.0/3.0
+        q=Mhe/M2
+        M=Mhe+M2 
+        alpha=Apre
+        ex=epre                         
 
-    def cutOffset(self,offset):
+        RL = (alpha*(1-ex)*0.49*(q**exp2))/((0.6*(q**exp2))+np.log(1.+(q**exp1)))
+        return RL
+
+        
+    
+    def cutOffset(self,Rmerge_proj,offset):
         #offset in kpc
-        SigOffset = self.SigOffset(offset)
-        Rmerge = self.data['Rmerge_proj'].values #kpc
-        return np.where((Rmerge > offset-SigOffset) & (Rmerge < offset  + SigOffset))[0]
-    
+        SigOffset = self.Galaxy['offset_uncer']
+        #self.SigOffset(offset)
         
-    def Tpdf(self,filename = 'other.png',TFLAG=None,TWINDOW=None):
-        from scipy.stats import rv_continuous
-        from matplotlib import rcParams, ticker
+        return np.where((Rmerge_proj > offset-SigOffset) & (Rmerge_proj < offset  + SigOffset))[0]
+    def BigOffset1D(self, filename, subject, xlabel, nOffset=[1.0 ,2./3.,2.0,3.0,5.0], norm = True,maxCut=None):
+        from matplotlib import rcParams,ticker
+        rcParams.update({'font.size': 18})
+        
+        offset = self.Galaxy['offset']
+        Tmerge = self.data['Tmerge'].values
+        Rmerge_proj = self.data['Rmerge_proj'].values.astype('float')
+        flag = self.data['flag'].values
         fig = plt.figure(figsize = (40,20))
-        rcParams.update({'font.size':18})
 
-        
-        Rpdf=self.Rpdf.pdf
-        D=self.data
-        Apre = D['Apre'].values
-        Mhe = D['Mhe'].values
-        Vkick = D['Vkick'].values
-        R = D['R'].values
-        Apost = D['Apost'].values
-        epost = D['epost'].values
-        #Rmerge = D['Rmerge'].values
-        #Vfinal = D['Vfinal'].values
-        Tmerge = D['Tmerge'].values*u.year.to(u.Myr)
-        
-        def cutTflag(tflag):
-            t=D['Tmerge'].values*u.year.to(u.Gyr)
-            I=np.where(t>tflag)[0]
-            return Apre[I],Mhe[I],Vkick[I],R[I],Apost[I],epost[I],Tmerge[I]#,Rmerge[I],Vfinal[I]
-        def cutTwindow(twindow):
-            t=D['Tmerge'].values*u.year.to(u.Gyr)
-            I=np.where((t>twindow[0])&(t<twindow[1]))[0]
-            return Apre[I],Mhe[I],Vkick[I],R[I],Apost[I],epost[I],Tmerge[I]#,Rmerge[I],Vfinal[I]
-        
-        Aprehalf,Mhehalf,Vkickhalf,Rhalf,Aposthalf,eposthalf,Tmergehalf = cutTflag(TFLAG[0])
-        Apre1,Mhe1,Vkick1,R1,Apost1,epost1,Tmerge1 = cutTflag(TFLAG[1])
-        Apre2,Mhe2,Vkick2,R2,Apost2,epost2,Tmerge2= cutTflag(TFLAG[2])
-
-        Aprew0,Mhew0,Vkickw0,Rw0,Apostw0,epostw0,Tmergew0 = cutTwindow(TWINDOW[0])
-        Aprew1,Mhew1,Vkickw1,Rw1,Apostw1,epostw1,Tmergew1 = cutTwindow(TWINDOW[1])
-
-    
         ax0 = fig.add_subplot(231)
         axhalf = fig.add_subplot(232)
         ax1 = fig.add_subplot(233)
         ax2 = fig.add_subplot(234)
-        axw0 = fig.add_subplot(235)
-        axw1 = fig.add_subplot(236)
-
-
+        axw1 = fig.add_subplot(235)
+        axw2 = fig.add_subplot(236)
         
-        #r'$A_{preSN}$ in $R_{\odot}$')
-        #'$V_{kick}$ in km/s')
-        #'$R_{birth}$ in kpc')
+        if maxCut:
+            ImaxCut =np.where(subject<maxCut)[0]
+            Tmerge = Tmerge[ImaxCut]
+            flag = flag[ImaxCut]
+            Rmerge_proj = Rmerge_proj[ImaxCut]
+            subject = subject[ImaxCut]
+        Iwin = np.where(flag == 1)[0]
+        Ihubble = np.where(flag != 2)[0]
 
+        if norm:
+            Constant = 1.0
+            ylabel='PDF'
+            alphaA=1.0
+            alphaS = 0.5
 
-        ax0.set_ylabel('PDF')
-        axhalf.set_ylabel('PDF')
-        ax1.set_ylabel('PDF')
-        ax2.set_ylabel('PDF')
-        axw0.set_ylabel('PDF')
-        axw1.set_ylabel('PDF')
+        else:
+            Constant = float(len(subject))
+            ylabel = 'log(n)'
+            ax0.set_yscale('log')
+            axhalf.set_yscale('log')
+            ax1.set_yscale('log')
+            ax2.set_yscale('log')
+            axw1.set_yscale('log')
+            axw2.set_yscale('log')
 
-        ax0.set_title('All Systems')
-        axhalf.set_title('Tmerge > '+str(TFLAG[0])+' Gyrs')
-        ax1.set_title('Tmerge > '+str(TFLAG[1])+' Gyrs')
-        ax2.set_title('Tmerge > '+str(TFLAG[2])+' Gyrs')
-        axw0.set_title(str(TWINDOW[0][0])+' Gyrs > Tmerge > '+str(TWINDOW[0][1])+' Gyrs')
-        axw1.set_title(str(TWINDOW[1][0])+' Gyrs > Tmerge > '+str(TWINDOW[1][1])+' Gyrs')
-        nbins = 40
+            alphaA=1.0
+            alphaS = 0.5
 
-        xlabel = '$e_{post}$'
+        Amin,Amax = 0.1,10.0
+        Mmin,Mmax = np.min(self.data['Mhe'].values),8.0
 
-        N, BINS, PLOTS = ax0.hist(epost,bins = nbins, normed = True, color = '.7')
-
-        N,bins, PLOTS = axhalf.hist(eposthalf,bins = BINS, normed = True, color = '.7')
-        N,bins, PLOTS = ax1.hist(epost1,bins = BINS, normed = True, color = '.7')
-        N,bins, PLOTS = ax2.hist(epost2,bins = BINS, normed = True, color = '.7')
-        N,bins, PLOTS = axw0.hist(epostw0,bins = BINS, normed = True, color = '.7')
-        N,bins, PLOTS = axw1.hist(epostw1,bins = BINS, normed = True, color = '.7')
-        fig.suptitle('All Bound PostSN Systems')
+        ax0.set_title('Observed Offset ('+str(offset)+' kpc)')
+        axhalf.set_title('Offset = '+str(np.round(nOffset[0],2))+'x Observed Offset')
+        ax1.set_title('Offset = '+str(np.round(nOffset[1],2))+'x Observed Offset')
+        ax2.set_title('Offset = '+str(nOffset[2])+'x Observed Offset')
+        axw1.set_title('Offset = '+str(nOffset[3])+'x Observed Offset')
+        axw2.set_title('Offset = '+str(nOffset[4])+'x Observed Offset')
         
-
-    
-
-
+        ax0.set_ylabel(ylabel)
+        axhalf.set_ylabel(ylabel)
+        ax1.set_ylabel(ylabel)
+        ax2.set_ylabel(ylabel)
+        axw1.set_ylabel(ylabel)
+        axw2.set_ylabel(ylabel)
 
         ax0.set_xlabel(xlabel)
         axhalf.set_xlabel(xlabel)
         ax1.set_xlabel(xlabel)
         ax2.set_xlabel(xlabel)
-        axw0.set_xlabel(xlabel)
         axw1.set_xlabel(xlabel)
+        axw2.set_xlabel(xlabel)
+
+        
+        if xlabel == r'$A_{pre}$ in $R_{\odot}$':
+
+            ax0.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            axhalf.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            ax1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            ax2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            axw1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            axw2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+
+        if xlabel == r'$M_{He}$ in $M_{\odot}$':
+
+            ax0.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            axhalf.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            ax1.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            ax2.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            axw1.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            axw2.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+
+        if xlabel == '$V_{kick}$ in km/s':
+            xx = np.linspace(0,max(subject),1000)
+
+            ax0.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            axhalf.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            ax1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            ax2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            axw1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            axw2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+
+        if xlabel == '$R_{birth}$ in kpc':
+            xx = np.linspace(0,max(subject),1000)
+            Rpdf=self.Rpdf.pdf
+
+            ax0.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            axhalf.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            ax1.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            ax2.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            axw1.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            axw2.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+
+        print (max(Tmerge[Ihubble]),max(Tmerge[Iwin]),max(Tmerge))
+        
+        I0 = Iwin
+        Ihalf = np.intersect1d(self.cutOffset(Rmerge_proj,nOffset[0]*offset),Ihubble)
+        I1 = np.intersect1d(self.cutOffset(Rmerge_proj,nOffset[1]*offset),Ihubble)
+        I2 = np.intersect1d(self.cutOffset(Rmerge_proj,nOffset[2]*offset),Ihubble)
+        Iw1 = np.intersect1d(self.cutOffset(Rmerge_proj,nOffset[3]*offset),Ihubble)
+        Iw2 = np.intersect1d(self.cutOffset(Rmerge_proj,nOffset[4]*offset),Ihubble)
+
+        nbins =int(np.sqrt(len(Iw2)))
+        print nbins
+        colorA = '.7'
+
+        colorS = 'g'
+
+        N, BINS, PATCHES = ax0.hist(subject[Ihubble], bins=nbins, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = axhalf.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = ax1.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = ax2.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = axw1.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = axw2.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+
+
+
+        n, bins, patches = ax0.hist(subject[I0], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset constraints')
+        n, bins, patches = axhalf.hist(subject[Ihalf], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset constraints')
+        n, bins, patches = ax1.hist(subject[I1], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset constraints')
+        n, bins, patches = ax2.hist(subject[I2], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset constraints')
+        n, bins, patches = axw1.hist(subject[Iw1], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset constraints')
+        n, bins, patches = axw2.hist(subject[Iw2], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset constraints')
+
+        ax1.legend(loc=0)
+
 
         fig.savefig(filename)
+   
+    def Big1D(self, filename, subject, xlabel, TFLAG = [0.5,1,2], TWINDOW=[[1,2],[2,3]],norm = True,maxCut=None):
+        from matplotlib import rcParams,ticker
+        rcParams.update({'font.size': 18})
+
+        Tmerge = self.data['Tmerge'].values
+        flag = self.data['flag'].values
+        fig = plt.figure(figsize = (40,20))
+
+        ax0 = fig.add_subplot(231)
+        axhalf = fig.add_subplot(232)
+        ax1 = fig.add_subplot(233)
+        ax2 = fig.add_subplot(234)
+        axw1 = fig.add_subplot(235)
+        axw2 = fig.add_subplot(236)
+        
+        if maxCut:
+            Tmerge = Tmerge[np.where(subject<maxCut)[0]]
+            flag = flag[np.where(subject<maxCut)[0]]
+            subject = subject[np.where(subject<maxCut)[0]]
+        Iwin = np.where(flag == 1)[0]
+        Ihubble = np.where(flag != 2)[0]
+
+        if norm:
+            Constant = 1.0
+            ylabel='PDF'
+            alphaA=1.0
+            alphaS = 0.5
+
+        else:
+            Constant = float(len(subject))
+            ylabel = 'log(n)'
+            ax0.set_yscale('log')
+            axhalf.set_yscale('log')
+            ax1.set_yscale('log')
+            ax2.set_yscale('log')
+            axw1.set_yscale('log')
+            axw2.set_yscale('log')
+
+            alphaA=1.0
+            alphaS = 0.5
+
+        Amin,Amax = 0.1,10.0
+        Mmin,Mmax = np.min(self.data['Mhe'].values),8.0
+
+        ax0.set_title('All Systems')
+        axhalf.set_title('Tmerge > '+str(TFLAG[0])+' Gyrs')
+        ax1.set_title('Tmerge > '+str(TFLAG[1])+' Gyrs')
+        ax2.set_title('Tmerge > '+str(TFLAG[2])+' Gyrs')
+        axw1.set_title(str(TWINDOW[0][0])+' Gyrs > Tmerge > '+str(TWINDOW[0][1])+' Gyrs')
+        axw2.set_title(str(TWINDOW[1][0])+' Gyrs > Tmerge > '+str(TWINDOW[1][1])+' Gyrs')
+        
+        ax0.set_ylabel(ylabel)
+        axhalf.set_ylabel(ylabel)
+        ax1.set_ylabel(ylabel)
+        ax2.set_ylabel(ylabel)
+        axw1.set_ylabel(ylabel)
+        axw2.set_ylabel(ylabel)
+
+        ax0.set_xlabel(xlabel)
+        axhalf.set_xlabel(xlabel)
+        ax1.set_xlabel(xlabel)
+        ax2.set_xlabel(xlabel)
+        axw1.set_xlabel(xlabel)
+        axw2.set_xlabel(xlabel)
 
         
+        if xlabel == r'$A_{pre}$ in $R_{\odot}$':
 
+            ax0.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            axhalf.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            ax1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            ax2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            axw1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            axw2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+
+        if xlabel == r'$M_{He}$ in $M_{\odot}$':
+
+            ax0.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            axhalf.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            ax1.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            ax2.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            axw1.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+            axw2.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
+
+        if xlabel == '$V_{kick}$ in km/s':
+            xx = np.linspace(0,max(subject),1000)
+
+            ax0.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            axhalf.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            ax1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            ax2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            axw1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+            axw2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+
+        if xlabel == '$R_{birth}$ in kpc':
+            xx = np.linspace(0,max(subject),1000)
+            Rpdf=self.Rpdf.pdf
+
+            ax0.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            axhalf.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            ax1.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            ax2.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            axw1.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+            axw2.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
+
+        print (max(Tmerge[Ihubble]),max(Tmerge[Iwin]),max(Tmerge))
         
+        I0 = Iwin
+        Ihalf = np.intersect1d(self.cutTmerge(Tmerge,TFLAG[0]),Iwin)
+        I1 = np.intersect1d(self.cutTmerge(Tmerge,TFLAG[1]),Iwin)
+        I2 = np.intersect1d(self.cutTmerge(Tmerge,TFLAG[2]),Iwin)
+        Iw1 = np.intersect1d(self.cutTmerge(Tmerge,TWINDOW[0][0],tmax=TWINDOW[0][1]),Iwin)
+        Iw2 = np.intersect1d(self.cutTmerge(Tmerge,TWINDOW[1][0],tmax=TWINDOW[1][1]),Iwin)
+
+        nbins = int(np.sqrt(len(Iw2)))
         
-        
+        colorA = '.7'
+
+        colorS = 'r'
+
+        N, BINS, PATCHES = ax0.hist(subject[Ihubble], bins=nbins, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = axhalf.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = ax1.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = ax2.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = axw1.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
+        n, bins, patches = axw2.hist(subject[Ihubble], bins=BINS, normed = norm, color = colorA,alpha = alphaA,label='SN Survivors Merging within Hubble Time')
 
 
 
+        n, bins, patches = ax0.hist(subject[I0], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset and Tmerge constraints')
+        n, bins, patches = axhalf.hist(subject[Ihalf], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset and Tmerge constraints')
+        n, bins, patches = ax1.hist(subject[I1], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset and Tmerge constraints')
+        n, bins, patches = ax2.hist(subject[I2], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset and Tmerge constraints')
+        n, bins, patches = axw1.hist(subject[Iw1], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset and Tmerge constraints')
+        n, bins, patches = axw2.hist(subject[Iw2], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset and Tmerge constraints')
+
+        ax1.legend(loc=0)
 
 
-
-        
-        
-        
+        fig.savefig(filename)
+   
     def input1Dpdf(self,filename='other.png',tflag=None):
         from scipy.stats import rv_continuous
         from matplotlib import rcParams,ticker

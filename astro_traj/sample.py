@@ -81,57 +81,111 @@ class Sample:
         samples = Table.read(samples, format='ascii')
 
         if method=='posterior':
-            m1 = samples['m1'][np.random.randint(0,len(samples['m1']),size)]
-            m2 = samples['m2'][np.random.randint(0,len(samples['m2']),size)]
+            m1 = samples['m1_source'][np.random.randint(0,len(samples['m1_source']),size)]
+            m2 = samples['m2_source'][np.random.randint(0,len(samples['m2_source']),size)]
             return m1, m2
 
         elif method=='delta_function':
-            m1 = np.ones(size)*samples['m1'].mean()
-            m2 = np.ones(size)*samples['m2'].mean()
+            m1 = np.ones(size)*samples['m1_source'].mean()
+            m2 = np.ones(size)*samples['m2_source'].mean()
             return m1, m2
 
         elif method=='gaussian':
-            m1 = np.random.normal(samples['m1'].mean(), samples['m1'].std(), size)
-            m2 = np.random.normal(samples['m2'].mean(), samples['m2'].std(), size)
+            m1 = np.random.normal(samples['m1_source'].mean(), samples['m1_source'].std(), size)
+            m2 = np.random.normal(samples['m2_source'].mean(), samples['m2_source'].std(), size)
             return m1, m2
 
         else: 
             raise ValueError("Undefined sampling method: %s" % method)
 
 
+    # sample distance from PE
+    def sample_distance(self, samples=None, method='delta_function', size=None):
+        """
+        Samples distance from posterior distrbution of your favorite PE run.
+        Just uses the mean value for distance by default. 
+        Can specify methods 'gaussian' or 'posteriors' to sample using other methods
+        """
+
+        if not samples:
+            raise ValueError("No posterior sample file specified!")
+        
+        samples = Table.read(samples, format='ascii')
+
+        if method=='posterior':
+            d = samples['distance'][np.random.randint(0,len(samples['distance']),size)]
+            return d
+
+        elif method=='delta_function':
+            d = np.ones(size)*samples['distance'].mean()
+            return d
+
+        elif method=='gaussian':
+            d = np.random.normal(samples['distance'].mean(), samples['distance'].std(), size)
+            return d
+
+        else: 
+            raise ValueError("Undefined sampling method: %s" % method)
+
+
     # sample semi-major axis
-    def sample_Apre(self, Amin, Amax, size=None):
+    def sample_Apre(self, Amin, Amax, method='uniform', size=None):
         '''
-        samples semi-major axis uniformly
+        samples semi-major axis uniformly (method='uniform', default) or uniformly in log (method='log')
         '''
-        A_samp = np.random.uniform(Amin, Amax, size)
-        return A_samp
+        if method=='uniform':
+            A_samp = np.random.uniform(Amin, Amax, size)
+            return A_samp
+
+        elif method=='log':
+            A_samp = 10**np.random.uniform(np.log10(Amin), np.log10(Amax), size)
+            return A_samp
+
+        else: 
+            raise ValueError("Undefined sampling method: %s" % method)
+
+
+    # sample eccentricity
+    def sample_epre(self, method='circularized',  size=None):
+        '''
+        samples initial eccentricity (for now, assume circularized)
+        '''
+        if method=='circularized':
+            e_samp = np.zeros(size)
+            return e_samp
+
+        else: 
+            raise ValueError("Undefined sampling method: %s" % method)
 
 
     # sample helium star mass
-    def sample_Mhe(self, Mmin, Mmax=8.0, size=None):
+    def sample_Mhe(self, Mmin, Mmax=8.0, method='uniform', size=None):
         '''
         samples He-star mass uniformly between Mns and 8 Msun (BH limit)
         '''
-        Mhe_samp = np.random.uniform(Mmin, Mmax, size=size)
-        return Mhe_samp
+        if method=='uniform':
+            Mhe_samp = np.random.uniform(Mmin, Mmax, size=size)
+            return Mhe_samp
+
+        else: 
+            raise ValueError("Undefined sampling method: %s" % method)
 
 
     # sample kick velocities
-    def sample_Vkick_maxwellian(self, scale=265, size=None):
+    def sample_Vkick(self, scale=265, Vmin=0, Vmax=2500, method='maxwellian', size=None):
         '''
-        sample kick velocity from Maxwellian (Hobbs 2005)
+        sample kick velocity from Maxwellian (Hobbs 2005, default) or uniformly (Wong 2010)
         '''
-        Vkick_samp = maxwell.rvs(loc=0, scale=scale, size=size)
-        return Vkick_samp
+        if method=='maxwellian':
+            Vkick_samp = maxwell.rvs(loc=0, scale=scale, size=size)
+            return Vkick_samp
 
+        elif method=='uniform':
+            Vkick_samp = np.random.uniform(Vmin, Vmax, size=size)
+            return Vkick_samp
 
-    def sample_Vkick_uniform(self, Vmin=0.0, Vmax=2500.0, size=None):
-        '''
-        sample kick uniformly (Wong 2010)
-        '''
-        Vkick_samp = np.random.uniform(Vmin, Vmax, size=size)
-        return Vkick_samp
+        else: 
+            raise ValueError("Undefined sampling method: %s" % method)
 
 
     def initialize_R(self):

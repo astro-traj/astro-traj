@@ -87,12 +87,6 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     # Infer about the telescope that made the measurements (for angular resolution)
     tele = constr_dict.telescope(telescope)
 
-    # Calculate angular resolution of the telescope, convert to physical size at the distance of the kilonova
-    theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
-    D_theta = Galaxy['d']*np.tan(theta)                # units of Mpc
-    Galaxy['offset_uncer'] = D_theta*1000.0            # offset uncertainty due to angular resolution of telescope (kpc)
-
-
     # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
     gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], h, rcut=100)
     samp=Sample(gal)
@@ -118,23 +112,32 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     Mcomp_dist, Mns_dist = samp.sample_masses(samples, method='posterior', size=Nsys)
     # (Msun)
 
-    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, size=Nsys)
+    d_dist = samp.sample_distance(samples, method='delta_function', size=Nsys)
+    # (Mpc)
+
+    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method='uniform', size=Nsys)
     # (Msun)
 
-    Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, size=Nsys)
+    Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method='uniform', size=Nsys)
     # (Rsun)
 
-    Vkick_dist = samp.sample_Vkick_maxwellian(size=Nsys)
+    epre_dist = samp.sample_epre(method='circularized', size=Nsys)
+    # (dimensionless)
+
+    Vkick_dist = samp.sample_Vkick(method='maxwellian', size=Nsys)
     # (km/s)
 
     R_dist = samp.sample_R(PDF, Nsys)
     # (kpc)
 
-    print "\nStarting the evolution of sampled binaries!"
-    for R, Mcomp, Mns, Apre, Mhe, Vkick in zip(R_dist, Mcomp_dist, Mns_dist, Apre_dist, Mhe_dist, Vkick_dist):
 
-        # Sample necessary parameters
-        epre = 0.0                                  # assume binary is circularized before SN2
+    print "\nStarting the evolution of sampled binaries!"
+    for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist, epre_dist, Mhe_dist, Vkick_dist):
+    
+        # Calculate angular resolution of the telescope, convert to physical size at the distance of merger
+        theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
+        D_theta = d*np.tan(theta)                # units of Mpc
+        Galaxy['offset_uncer'] = D_theta*u.Mpc.to(u.kpc)   # offset uncertainty from angular resolution of telescope (kpc)
 
         # initialize System class with pertinent parameters
         T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, Vkick)

@@ -58,10 +58,7 @@ def galaxy(galaxy_name, filename_samples, r_eff, offset, h):
     }
 
     # Dic of Galaxies containing dicts about properities
-    samples_out = Table.read(filename_samples, format='ascii')
-
     Galaxy = Galaxy_Dict[galaxy_name]
-    Galaxy['d'] = np.mean(samples_out['distance'])
     Galaxy['R_eff'] = r_eff
     Galaxy['offset'] = offset
 

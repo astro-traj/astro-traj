@@ -425,7 +425,7 @@ class System:
             self.Vfinal = np.nan
 
         data = [self.M2*u.kg.to(u.M_sun), self.Mns*u.kg.to(u.M_sun), self.Mhe*u.kg.to(u.M_sun), \
-                self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, self.d*u.m.to(u.Mpc) \
+                self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, self.d*u.m.to(u.Mpc), \
                 self.R*u.m.to(u.kpc), self.galcosth, self.galphi, \
                 self.Vkick*u.m.to(u.km), self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), \
                 self.Vfinal*u.m.to(u.km), self.flag]

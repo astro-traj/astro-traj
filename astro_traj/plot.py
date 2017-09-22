@@ -671,7 +671,7 @@ class Plot:
         res=len(df_all)/5
         stepsize = (df_all['t'].max()-df_all['t'].min())/res
         time = ax_gal.annotate('$t_{post_{SN}}=%.3f\ Gyr$' % (float(t_ctr)*u.s.to(u.Gyr)), xy=(-1.5,-4.7))
-        print 'Number of steps: %i' % res
+        print 'Number of steps in %s: %i' % (num,res)
         for i in xrange(res):
             time.remove()
             time = ax_gal.annotate('$t_{post_{SN}}=%.3f$' % (float(t_ctr)*u.s.to(u.Gyr)), xy=(-1.5,-4.7))

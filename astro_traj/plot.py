@@ -39,7 +39,7 @@ __author__ = 'Michael Zevin <michael.zevin@ligo.org>'
 __all__ = ['Plotting']
 
 class Plot:
-    def __init__(self, samples, galaxy_name, offset, r_eff, telescope, output=None):
+    def __init__(self, samples, galaxy_name, offset, r_eff, telescope, output=None, flatten=False):
         '''
         initialize with values passed to gal and output file. outfile must be a string.
         '''
@@ -51,10 +51,6 @@ class Plot:
         Galaxy = constr_dict.galaxy(galaxy_name, samples, r_eff, offset, h)
         # Infer about the telescope that made the measurements (for angular resolution)
         tele = constr_dict.telescope(telescope)
-        # Calculate angular resolution of the telescope, convert to physical size at the distance of the kilonova
-        theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
-        D_theta = Galaxy['d']*np.tan(theta)                # units of Mpc
-        Galaxy['offset_uncer'] = D_theta*1000.0            # offset uncertainty due to angular resolution of telescope (kpc)
         # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
         gal=galaxy.Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], h, rcut=100)
         samp=Sample(gal)
@@ -73,6 +69,7 @@ class Plot:
         self.abulge = gal.abulge
         self.Rs = gal.Rs
 
+        self.gal = gal
         self.Ubulge = gal.Ubulge
         self.Uhalo = gal.Uhalo
 
@@ -80,6 +77,26 @@ class Plot:
             outfile = output
             data = pd.read_csv(outfile)
             self.data = data
+
+        if flatten:
+            scale = 5.0
+            from scipy.integrate import quad
+            # integrate over z-axis
+            def rho(x,y,z):
+               return 2 * np.sqrt(x**2 + y**2 + z**2) * self.abulge/C.kpc.value * (self.abulge/C.kpc.value + np.sqrt(x**2 + y**2 + z**2))**(-3)
+            def rho_flat(x,y):
+                return quad(rho, -np.inf, np.inf, args=(x,y))[0]
+
+            x = np.linspace(-1*scale, scale, 100)
+            y = np.linspace(-1*scale, scale, 100)
+            xx, yy = np.meshgrid(x,y)
+            
+            col=[]
+            for i in xrange(len(xx.flatten())): col.append(rho_flat(xx.flatten()[i], yy.flatten()[i]))
+            col=np.asarray(col)
+            self.col = col
+            return
+
     def getSigOffset(self,d):
         
         #d in kpc#
@@ -431,49 +448,63 @@ class Plot:
         plt.savefig('vkick_mhe_pdf.png')
 
 
-    def trajectory(self, traj_file):
-        df = pd.read_csv(traj_file)
 
+
+    def trajectory(self, traj_file):
+        df = pd.read_csv(traj_file+'.dat')
+        dfi = pd.read_csv(traj_file+'_ini.dat')
+        num = traj_file[10:]
+
+        # setup axes
         fig = plt.figure()
         gs = gridspec.GridSpec(8,9)
         ax_gal = fig.add_subplot(gs[:,:-1])
         ax_cbar = fig.add_subplot(gs[:,-1])
 
         # plot stellar background
-        scale = 5.0
-        def rho(r):
-           return 2 * r * self.abulge/C.kpc.value * (self.abulge/C.kpc.value + r)**(-3)
         def norm(x):
             return (x-x.min())/(x.max()-x.min())
+        col_norm = norm(self.col)
+        scale = 5.0
+        x = np.linspace(-1*scale, scale, 100)
+        y = np.linspace(-1*scale, scale, 100)
+        xx, yy = np.meshgrid(x,y)
 
-        x = np.linspace(-1*scale, scale, 200)
-        y = np.linspace(-1*scale, scale, 200)
-        xv, yv = np.meshgrid(x,y)
-        col = rho(np.sqrt(xv.flatten()**2 + yv.flatten()**2))
-        col_norm = norm(col)
+        ax_gal.scatter(xx, yy, c=col_norm, cmap='Greys', label=None, zorder=1)
 
-        ax_gal.scatter(xv, yv, c=col_norm, cmap='Greys')
-
-        # plot the trajectory of the binary through the galaxy, colored by age
-        age_col = df.iloc[1:]['t']*u.s.to(u.Gyr)
-        pts = ax_gal.scatter(df.iloc[1:]['x']/C.kpc.value, df.iloc[1:]['y']/C.kpc.value, c=age_col, cmap='viridis', s=0.5)
 
         # plot pre-SN circular orbit
-        # FIXME plot this correctly in 3d...
+        from scipy.integrate import ode
+        Ri = np.sqrt(df.iloc[0]['x']**2+df.iloc[0]['y']**2+df.iloc[0]['z']**2)
+        Vi = np.sqrt(dfi.iloc[0]['vx']**2+dfi.iloc[0]['vy']**2+dfi.iloc[0]['vz']**2)
+        Torb = 2*np.pi*Ri/Vi
+        solver=ode(self.gal.Vdot).set_integrator('dopri5', nsteps=1e13, max_step=u.year.to(u.s)*1e6, rtol=1e-11)
+        sol = []
+        def solout(t,y):
+            temp=list(y)
+            temp.append(t)
+            sol.append(temp)
+        RR = np.array([dfi.iloc[0]['vx'],dfi.iloc[0]['vy'],dfi.iloc[0]['vz'],df.iloc[0]['x'],df.iloc[0]['y'],df.iloc[0]['z']])
+        solver.set_solout(solout)
+        solver.set_initial_value(RR,0)
+        solver.integrate(Torb)
+        sol=np.array(sol)
         
-        phis = np.linspace(0,2*np.pi,1000)
-        R = np.sqrt((df.iloc[0]['x']/C.kpc.value)**2 + (df.iloc[0]['y']/C.kpc.value)**2)
-        ax_gal.plot(R*np.cos(phis), R*np.sin(phis), color='g', label='initial orbit')
+        ax_gal.plot(sol[:,3]*u.m.to(u.kpc), sol[:,4]*u.m.to(u.kpc), color='g', label='initial orbit', zorder=3, alpha=0.7)
+
+        # plot the trajectory of the binary through the galaxy, colored by age
+        age_col = df['t']*u.s.to(u.Gyr)
+        pts = ax_gal.scatter(df['x']*u.m.to(u.kpc), df['y']*u.m.to(u.kpc), c=age_col, cmap='viridis', s=0.5, zorder=2, label=None, alpha=0.5)
 
         # plot location of supernova and kilonova
-        ax_gal.scatter(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, marker='*', color='g', s=40, label='SN2')
-        ax_gal.scatter(df.iloc[-1]['x']/C.kpc.value, df.iloc[-1]['y']/C.kpc.value, marker='*', color='r', s=80, label='Merger')
-        #xdir = df.iloc[1]['vx']*C.kpc.value/1000 - df.iloc[0]['vx']*C.kpc.value/1000
-        #ydir = df.iloc[1]['vy']*C.kpc.value/1000 - df.iloc[0]['vy']*C.kpc.value/1000
-        #ax_gal.arrow(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, dx=xdir/C.kpc.value, dy=ydir/C.kpc.value, color='r')
+        ax_gal.scatter(df.iloc[0]['x']*u.m.to(u.kpc), df.iloc[0]['y']*u.m.to(u.kpc), marker='*', color='r', s=50, label='SN2', zorder=4)
+        ax_gal.scatter(df.iloc[-1]['x']*u.m.to(u.kpc), df.iloc[-1]['y']*u.m.to(u.kpc), marker='*', color='y', s=100, label='Merger', zorder=4)
+        xdir = (df.iloc[0]['vx']-dfi.iloc[0]['vx'])/1e5
+        ydir = (df.iloc[0]['vy']-dfi.iloc[0]['vy'])/1e5
+        ax_gal.arrow(df.iloc[0]['x']*u.m.to(u.kpc), df.iloc[0]['y']*u.m.to(u.kpc), dx=xdir, dy=ydir, color='r', width=0.02, head_width=0.1, zorder=4)
 
         # add colorbar
-        cbar = fig.colorbar(pts, ticks=[round(age_col.min(),3), round(age_col.max(),3)], cax=ax_cbar, orientation='vertical')
+        cbar = fig.colorbar(pts, ticks=[age_col.min(), age_col.max()], cax=ax_cbar, orientation='vertical')
 
         # label & format
         ax_gal.set_xlim(-1*scale,scale)
@@ -483,105 +514,70 @@ class Plot:
         cbar.set_label(r'$Gyr$')
 
         # annotate with apre, vkick, mhe
+        ax_gal.annotate('Vkick = %.1f km/s\nMhe = %.1f Msun\nApre = %.1f Rsun' % (dfi.iloc[0]['Vkick']*u.m.to(u.km),dfi.iloc[0]['Mhe']*u.kg.to(u.Msun),dfi.iloc[0]['Apre']*u.m.to(u.Rsun)), xy=(-4.8,3.5))
 
-        ax_gal.legend()
+        ax_gal.legend(loc='upper right')
         plt.tight_layout()
-        plt.savefig('traj.png', dpi=300)
-
-
-    def trajectory_animation(self, traj_file):
-        df = pd.read_csv(traj_file)
-
-        fig = plt.figure()
-        gs = gridspec.GridSpec(8,9)
-        ax_gal = fig.add_subplot(gs[:,:-1])
-        ax_cbar = fig.add_subplot(gs[:,-1])
-
-        # plot stellar background
-        scale = 5.0
-        def rho(r):
-           return 2 * r * self.abulge/C.kpc.value * (self.abulge/C.kpc.value + r)**(-3)
-        def norm(x):
-            return (x-x.min())/(x.max()-x.min())
-
-        x = np.linspace(-1*scale, scale, 200)
-        y = np.linspace(-1*scale, scale, 200)
-        xv, yv = np.meshgrid(x,y)
-        col = rho(np.sqrt(xv.flatten()**2 + yv.flatten()**2))
-        col_norm = norm(col)
-
-        ax_gal.scatter(xv, yv, c=col_norm, cmap='Greys')
-
-        # plot pre-SN circular orbit
-        phis = np.linspace(0,2*np.pi,1000)
-        R = np.sqrt((df.iloc[0]['x']/C.kpc.value)**2 + (df.iloc[0]['y']/C.kpc.value)**2)
-        ax_gal.plot(R*np.cos(phis), R*np.sin(phis), color='g')
-
-        # plot location of supernova and kilonova
-        ax_gal.scatter(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, marker='*', color='g', s=40)
-        #xdir = df.iloc[1]['vx']*C.kpc.value/1000 - df.iloc[0]['vx']*C.kpc.value/1000
-        #ydir = df.iloc[1]['vy']*C.kpc.value/1000 - df.iloc[0]['vy']*C.kpc.value/1000
-        #ax_gal.arrow(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, dx=xdir/C.kpc.value, dy=ydir/C.kpc.value, color='r')
-
-        age_col = df.iloc[1:]['t']*u.s.to(u.Gyr)
-        # label & format
-        ax_gal.set_xlim(-1*scale,scale)
-        ax_gal.set_ylim(-1*scale,scale)
-        ax_gal.set_xlabel(r'$kpc$')
-        ax_gal.set_ylabel(r'$kpc$')
-        plt.tight_layout()
-
-        # plot the trajectory of the binary through the galaxy, colored by age
-        test_pts = ax_gal.scatter(df.iloc[i:i+1]['x']/C.kpc.value, df.iloc[i:i+1]['y']/C.kpc.value, c=age_col, cmap='viridis', s=0.01)
-        cbar = fig.colorbar(test_pts, ticks=[age_col.min(), age_col.max()], cax=ax_cbar, orientation='vertical')
-        cbar.set_label(r'$Gyr$')
-
-        for i in xrange(len(df)):
-            pts = ax_gal.scatter(df.iloc[i:i+1]['x']/C.kpc.value, df.iloc[i:i+1]['y']/C.kpc.value, c=age_col, cmap='viridis', s=0.5)
-            # add colorbar
-            if i == len(df)-1:
-                ax_gal.scatter(df.iloc[-1]['x']/C.kpc.value, df.iloc[-1]['y']/C.kpc.value, marker='*', color='r', s=80)
-            print i
-
-            plt.savefig('movie/traj_'+str(i)+'.png')
-
-        
-
-
-
+        plt.savefig('traj_'+num+'.png', dpi=300)
 
 
     def trajectory_3d(self, traj_file):
-        df = pd.read_csv(traj_file)
+        df = pd.read_csv(traj_file+'.dat')
+        dfi = pd.read_csv(traj_file+'_ini.dat')
 
+        # setup axes
         fig = plt.figure()
         gs = gridspec.GridSpec(8,9)
         ax_gal = fig.add_subplot(gs[:,:-1], projection='3d')
         ax_cbar = fig.add_subplot(gs[:,-1])
-        '''
+
         # plot stellar background
         scale = 5.0
         def rho(r):
            return 2 * r * self.abulge/C.kpc.value * (self.abulge/C.kpc.value + r)**(-3)
         def norm(x):
             return (x-x.min())/(x.max()-x.min())
-        
-        x = np.linspace(-1*scale, scale, 100)
-        y = np.linspace(-1*scale, scale, 100)
-        z = np.linspace(-1*scale, scale, 100)
-        xv, yv, zv = np.meshgrid(x,y,z)
-        col = rho(np.sqrt(xv.flatten()**2 + yv.flatten()**2 + zv.flatten()**2))
+
+        x = np.linspace(-1*scale, scale, 50)
+        y = np.linspace(-1*scale, scale, 50)
+        z = np.linspace(-1*scale, scale, 50)
+        xx, yy, zz = np.meshgrid(x,y,z)
+        col = rho(np.sqrt(xx.flatten()**2 + yy.flatten()**2 + zz.flatten()**2))
         col_norm = norm(col)
 
-        ax_gal.scatter(xv, yv, zv, c=col_norm, cmap='Greys', s=0.1)
-        '''
+        ax_gal.scatter(xx, yy, zz, c=col_norm, cmap='Greys', label=None, zorder=-1, alpha=0.3, s=0.1)
+
+
+        # plot pre-SN circular orbit
+        from scipy.integrate import ode
+        Ri = np.sqrt(df.iloc[0]['x']**2+df.iloc[0]['y']**2+df.iloc[0]['z']**2)
+        Vi = np.sqrt(dfi.iloc[0]['vx']**2+dfi.iloc[0]['vy']**2+dfi.iloc[0]['vz']**2)
+        Torb = 2*np.pi*Ri/Vi
+        solver=ode(self.gal.Vdot).set_integrator('dopri5', nsteps=1e13, max_step=u.year.to(u.s)*1e6, rtol=1e-11)
+        sol = []
+        def solout(t,y):
+            temp=list(y)
+            temp.append(t)
+            sol.append(temp)
+        RR = np.array([dfi.iloc[0]['vx'],dfi.iloc[0]['vy'],dfi.iloc[0]['vz'],df.iloc[0]['x'],df.iloc[0]['y'],df.iloc[0]['z']])
+        solver.set_solout(solout)
+        solver.set_initial_value(RR,0)
+        solver.integrate(Torb)
+        sol=np.array(sol)
+        
+        ax_gal.plot(sol[:,3]*u.m.to(u.kpc), sol[:,4]*u.m.to(u.kpc), sol[:,5]*u.m.to(u.kpc), color='g', label='initial orbit', zorder=2, alpha=1.0)
+
         # plot the trajectory of the binary through the galaxy, colored by age
-        age_col = df.iloc[1:]['t']*u.s.to(u.Gyr)
-        pts = ax_gal.scatter(df.iloc[1:]['x']/C.kpc.value, df.iloc[1:]['y']/C.kpc.value, df.iloc[1:]['z']/C.kpc.value,c=age_col, cmap='viridis', s=0.5)
+        age_col = df['t']*u.s.to(u.Gyr)
+        pts = ax_gal.scatter(df['x']*u.m.to(u.kpc), df['y']*u.m.to(u.kpc), df['z']*u.m.to(u.kpc), c=age_col, cmap='viridis', s=0.5, zorder=1, label=None, alpha=1.0)
 
         # plot location of supernova and kilonova
-        ax_gal.scatter(df.iloc[0]['x']/C.kpc.value, df.iloc[0]['y']/C.kpc.value, df.iloc[0]['z']/C.kpc.value, marker='*', color='g', s=40)
-        ax_gal.scatter(df.iloc[-1]['x']/C.kpc.value, df.iloc[-1]['y']/C.kpc.value, df.iloc[-1]['z']/C.kpc.value, marker='*', color='r', s=80)
+        ax_gal.scatter(df.iloc[0]['x']*u.m.to(u.kpc), df.iloc[0]['y']*u.m.to(u.kpc), df.iloc[0]['z']*u.m.to(u.kpc),marker='*', color='g', s=40, label='SN2', zorder=3)
+        ax_gal.scatter(df.iloc[-1]['x']*u.m.to(u.kpc), df.iloc[-1]['y']*u.m.to(u.kpc), df.iloc[-1]['z']*u.m.to(u.kpc),marker='*', color='r', s=80, label='Merger', zorder=3)
+        xdir = (df.iloc[0]['vx']-dfi.iloc[0]['vx'])/1e6
+        ydir = (df.iloc[0]['vy']-dfi.iloc[0]['vy'])/1e6
+        zdir = (df.iloc[0]['vz']-dfi.iloc[0]['vz'])/1e6
+        ax_gal.quiver(df.iloc[0]['x']*u.m.to(u.kpc), df.iloc[0]['y']*u.m.to(u.kpc), df.iloc[0]['z']*u.m.to(u.kpc),xdir, ydir, zdir, color='r', length=10.0)
 
         # add colorbar
         cbar = fig.colorbar(pts, ticks=[age_col.min(), age_col.max()], cax=ax_cbar, orientation='vertical')
@@ -595,6 +591,98 @@ class Plot:
         ax_gal.set_zlabel(r'$kpc$')
         cbar.set_label(r'$Gyr$')
 
+        # annotate with apre, vkick, mhe
+        #ax_gal.annotate('Vkick = %.1f km/s\nMhe = %.1f Msun\nApre = %.1f Rsun' % (dfi.iloc[0]['Vkick']*u.m.to(u.km),dfi.iloc[0]['Mhe']*u.kg.to(u.Msun),dfi.iloc[0]['Apre']*u.m.to(u.Rsun)), xy=(-4.8,3.5))
+
+        ax_gal.legend()
         plt.tight_layout()
-        plt.savefig('traj_3d.png')
+        plt.savefig('traj_3d.png', dpi=300)
+
+
+
+    def trajectory_animation(self, traj_file):
+        df = pd.read_csv(traj_file+'.dat')
+        dfi = pd.read_csv(traj_file+'_ini.dat')
+
+        # setup axes
+        fig = plt.figure()
+        gs = gridspec.GridSpec(8,9)
+        ax_gal = fig.add_subplot(gs[:,:-1])
+        ax_cbar = fig.add_subplot(gs[:,-1])
+
+        # plot stellar background
+        scale = 5.0
+        def rho(r):
+           return 2 * r * self.abulge/C.kpc.value * (self.abulge/C.kpc.value + r)**(-3)
+        def norm(x):
+            return (x-x.min())/(x.max()-x.min())
+
+        x = np.linspace(-1*scale, scale, 200)
+        y = np.linspace(-1*scale, scale, 200)
+        xx, yy = np.meshgrid(x,y)
+        col = rho(np.sqrt(xx.flatten()**2 + yy.flatten()**2))
+        col_norm = norm(col)
+
+        ax_gal.scatter(xx, yy, c=col_norm, cmap='Greys', label=None, zorder=0)
+
+
+        # plot pre-SN circular orbit
+        from scipy.integrate import ode
+        Ri = np.sqrt(df.iloc[0]['x']**2+df.iloc[0]['y']**2+df.iloc[0]['z']**2)
+        Vi = np.sqrt(dfi.iloc[0]['vx']**2+dfi.iloc[0]['vy']**2+dfi.iloc[0]['vz']**2)
+        Torb = 2*np.pi*Ri/Vi
+        solver=ode(self.gal.Vdot).set_integrator('dopri5', nsteps=1e13, max_step=u.year.to(u.s)*1e6, rtol=1e-11)
+        sol = []
+        def solout(t,y):
+            temp=list(y)
+            temp.append(t)
+            sol.append(temp)
+        RR = np.array([dfi.iloc[0]['vx'],dfi.iloc[0]['vy'],dfi.iloc[0]['vz'],df.iloc[0]['x'],df.iloc[0]['y'],df.iloc[0]['z']])
+        solver.set_solout(solout)
+        solver.set_initial_value(RR,0)
+        solver.integrate(Torb)
+        sol=np.array(sol)
+        
+
+        # label & format
+        ax_gal.set_xlim(-1*scale,scale)
+        ax_gal.set_ylim(-1*scale,scale)
+        ax_gal.set_xlabel(r'$kpc$')
+        ax_gal.set_ylabel(r'$kpc$')
+
+        # annotate with apre, vkick, mhe and set legend before loop
+        ax_gal.annotate('Vkick = %.1f km/s\nMhe = %.1f Msun\nApre = %.1f Rsun' % (dfi.iloc[0]['Vkick']*u.m.to(u.km),dfi.iloc[0]['Mhe']*u.kg.to(u.Msun),dfi.iloc[0]['Apre']*u.m.to(u.Rsun)), xy=(-4.8,3.5))
+        ax_gal.scatter(10, 10, marker='*', color='g', s=40, label='2nd Supernova')
+        ax_gal.arrow(10, 10, dx=1, dy=1, color='r', width=0.02, head_width=0.1)
+        ax_gal.scatter(10, 10, marker='*', color='r', s=80, label='BNS Merger')
+        ax_gal.legend(loc='upper right')
+
+        xdir = (df.iloc[0]['vx']-dfi.iloc[0]['vx'])/0.5e6
+        ydir = (df.iloc[0]['vy']-dfi.iloc[0]['vy'])/0.5e6
+
+        age_col = df['t']*u.s.to(u.Gyr)
+        pts = ax_gal.scatter(10*np.ones(len(age_col)),10*np.ones(len(age_col)), c=age_col, cmap='viridis')
+        cbar = fig.colorbar(pts, ticks=[age_col.min(), age_col.max()], cax=ax_cbar, orientation='vertical')
+        cbar.set_label(r'$Gyr$')
+        plt.tight_layout()
+
+        # create new df with the pertinent info
+        before = np.transpose([sol[:,3][::-1],sol[:,4][::-1],sol[:,5][::-1],-1*sol[:,6][::-1]])
+        after = np.transpose([df['x'],df['y'],df['z'],df['t']])
+        df_all = pd.DataFrame(np.vstack([before[:-1],after]), columns=['x','y','z','t'])
+
+        t_ctr = df_all['t'].min()
+        res=100
+        stepsize = (df_all['t'].max()-df_all['t'].min())/res
+        for i in xrange(res):
+            steps = df_all[(df_all['t']>t_ctr) & (df_all['t']<t_ctr+stepsize)]
+            ax_gal.scatter(steps['x']*u.m.to(u.kpc), steps['y']*u.m.to(u.kpc), c=steps['t']*u.s.to(u.Gyr), vmin=0.0, vmax=age_col.max(), cmap='viridis', s=0.5, alpha=0.5)
+            if t_ctr > 0.0:
+                ax_gal.arrow(float(df_all.iloc[np.where(df_all['t']==0)]['x']*u.m.to(u.kpc)), float(df_all.iloc[np.where(df_all['t']==0)]['y']*u.m.to(u.kpc)), dx=xdir, dy=ydir, color='r', width=0.1, head_width=0.3)
+                ax_gal.scatter(df_all.iloc[np.where(df_all['t']==0)]['x']*u.m.to(u.kpc), df_all.iloc[np.where(df_all['t']==0)]['y']*u.m.to(u.kpc), marker='*', color='g', s=80)
+            if i == res-1:
+                ax_gal.scatter(df_all.iloc[-1]['x']*u.m.to(u.kpc), df_all.iloc[-1]['y']*u.m.to(u.kpc), marker='*', color='r', s=160)
+            plt.savefig('movie/' + str(i).zfill(4))
+            t_ctr += stepsize
+            print "Done with %i" % i
 

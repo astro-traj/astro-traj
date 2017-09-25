@@ -41,7 +41,7 @@ class System:
     Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V
     
     """
-    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
+    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, sys_flag, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
         """ 
         #Masses in Msun, Apre in Rsun, Vkick in km/s, R in kpc
         #galphi,galcosth,omega, phi, costh (position, initial velocity, and kick angles) sampled randomly, unless specified (>-1)
@@ -62,6 +62,8 @@ class System:
         Vkick = Vkick*u.km.to(u.m)
         R = R*u.kpc.to(u.m)
         d = d*u.Mpc.to(u.m)
+
+        if sys_flag: self.sys_flag = sys_flag
 
         if galphi: self.galphi = galphi
         else: self.galphi = np.random.uniform(0,2*np.pi)
@@ -231,7 +233,7 @@ class System:
         self.Y0 = R*galsinth*np.sin(galphi)
         self.Z0 = R*galcosth
 
-    def setVxyz_0(self,circflag=0):
+    def setVxyz_0(self):
         """ 
         Here, vphi and vcosth are as galphi and galcosth, and give random direction for V_sys postSN
 
@@ -242,10 +244,14 @@ class System:
         tangential to the sphere, giving Vp_rot (Vp_rot = Vp cos(omega) + (k x Vp) sin(omega)
         where k is unit vector r/R where r=(x,y,z)
 
-        Specify circflag=1 to set V0 without adding the SN-imparted velocity
+        Specify flag=circ_test to set V0 without adding the SN-imparted velocity
+        Specify flag=vkick_test to set the initial galactic velocity to 0, so that the velocity of the system is due solely to the supernova
 
 
         """
+        if self.sys_flag not in ['circ_test','vkick_test']:
+            raise ValueError("Unspecified flag %s" % args.sys_flag)
+
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
         R = self.R
 
@@ -255,8 +261,9 @@ class System:
 
         omega = self.omega #orientation of orbit on R-sphere (angle between Vorb and R-Z plane)
 
-        if circflag == 1: V_sys = 0 #For checking that initial conditions correspond to circular galactic orbits
+        if self.sys_flag=='circ_test': V_sys = 0 #For checking that initial conditions correspond to circular galactic orbits
         else: V_sys = self.V_sys #Velocity imparted by SN
+
         vphi = np.random.uniform(0,2*np.pi) #
         vcosth = np.random.uniform(-1,1)    # Choose random direction for system velocity
         vsinth = np.sqrt(1-(vcosth**2))    # equivalent to choosing random orientation preSN
@@ -266,6 +273,8 @@ class System:
         self.vcosth=vcosth
         self.vsinth=vsinth
         Vtot = self.getVcirc(X0,Y0,Z0)
+
+        if self.sys_flag=='vkick_test': Vtot = 0 #For checking that initial conditions correspond to circular galactic orbits
 
         vpx = Vtot * np.sin(galth-(np.pi/2))*np.cos(galphi)
         vpy = Vtot * np.sin(galth-(np.pi/2))*np.sin(galphi)

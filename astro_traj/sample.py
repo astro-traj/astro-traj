@@ -72,7 +72,7 @@ class Sample:
         """
         Samples m1 and m2 from posterior distrbution of your favorite PE run.
         Samples from the posterior samples by default. 
-        Can specify methods 'gaussian' or 'delta_function' to sample using the mean and std of the posterior samples only
+        Can specify methods 'gaussian', 'mean', or 'median' to sample using other sampling methods
         """
 
         if not samples:
@@ -85,14 +85,19 @@ class Sample:
             m2 = samples['m2_source'][np.random.randint(0,len(samples['m2_source']),size)]
             return m1, m2
 
-        elif method=='delta_function':
+        elif method=='mean':
             m1 = np.ones(size)*samples['m1_source'].mean()
             m2 = np.ones(size)*samples['m2_source'].mean()
             return m1, m2
 
+        elif method=='median':
+            m1 = np.ones(size)*np.median(samples['m1_source'])
+            m2 = np.ones(size)*np.median(samples['m2_source'])
+            return m1, m2
+
         elif method=='gaussian':
-            m1 = np.random.normal(samples['m1_source'].mean(), samples['m1_source'].std(), size)
-            m2 = np.random.normal(samples['m2_source'].mean(), samples['m2_source'].std(), size)
+            m1 = np.random.normal(np.median(samples['m1_source']), samples['m1_source'].std(), size)
+            m2 = np.random.normal(np.median(samples['m2_source']), samples['m2_source'].std(), size)
             return m1, m2
 
         else: 
@@ -100,11 +105,11 @@ class Sample:
 
 
     # sample distance from PE
-    def sample_distance(self, samples=None, method='delta_function', size=None):
+    def sample_distance(self, samples=None, method='median', size=None):
         """
         Samples distance from posterior distrbution of your favorite PE run.
         Just uses the mean value for distance by default. 
-        Can specify methods 'gaussian' or 'posteriors' to sample using other methods
+        Can specify methods 'gaussian', 'mean', or 'posteriors' to sample using other methods
         """
 
         if not samples:
@@ -116,12 +121,16 @@ class Sample:
             d = samples['distance'][np.random.randint(0,len(samples['distance']),size)]
             return d
 
-        elif method=='delta_function':
+        elif method=='mean':
             d = np.ones(size)*samples['distance'].mean()
             return d
 
+        elif method=='median':
+            d = np.ones(size)*np.median(samples['distance'])
+            return d
+
         elif method=='gaussian':
-            d = np.random.normal(samples['distance'].mean(), samples['distance'].std(), size)
+            d = np.random.normal(np.median(samples['distance']), samples['distance'].std(), size)
             return d
 
         else: 

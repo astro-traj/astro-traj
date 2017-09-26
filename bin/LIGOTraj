@@ -63,7 +63,9 @@ def parse_commandline():
     parser.add_argument('--Vkick', type=str, default='maxwellian', help="Specify sampling procedure for kick velocity. Default=maxwellian")
     parser.add_argument('--Ms', type=str, default='posterior', help="Specify sampling procedure for NS masses. Default=posterior")
     parser.add_argument('--epre', type=str, default='circularized', help="Specify sampling procedure for initial eccentricity. Default=circularized")
-    parser.add_argument('--distance', type=str, default='delta_function', help="Specify sampling procedure for the distance. Default=delta_function")
+    parser.add_argument('--distance', type=str, default='median', help="Specify sampling procedure for the distance. Default=median")
+
+    parser.add_argument('--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick. Default=delta_function")
     args = parser.parse_args()
 
     return args
@@ -102,7 +104,8 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
 
     # Create empty output file
-    df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'galcosth', 'galphi', 'Vkick', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'flag'])
+    df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', \
+                                'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'flag'])
     df.to_csv(args.outfile+'.dat', sep=',', index=False)
 
 
@@ -137,17 +140,17 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     R_dist = samp.sample_R(PDF, Nsys)
     # (kpc)
 
-
+    
     print "\nStarting the evolution of sampled binaries!"
     for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist, epre_dist, Mhe_dist, Vkick_dist):
     
         # Calculate angular resolution of the telescope, convert to physical size at the distance of merger
         theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
-        D_theta = d*np.tan(theta)                # units of Mpc
+        D_theta = d*np.tan(theta)                          # units of Mpc
         Galaxy['offset_uncer'] = D_theta*u.Mpc.to(u.kpc)   # offset uncertainty from angular resolution of telescope (kpc)
 
         # initialize System class with pertinent parameters
-        T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick)
+        T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)
         # implement a SN kick to the system, and check to see if binary is disrupted
         T.SN()
         # if binary is disrupted, move on to next system
@@ -155,7 +158,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
             continue
 
         # set merger time for trajectory integration, specify Tmin and Tmax in Gyr
-        T.setTmerge(Tmin=0.0, Tmax=10.0)
+        T.setTmerge(Tmin=0.0, Tmax=14.0)
         # if binary does not meet inspiral time requirements, move on to next system
         if T.flag == 2:
             outdata = T.write_data()

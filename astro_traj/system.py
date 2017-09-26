@@ -41,7 +41,7 @@ class System:
     Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V
     
     """
-    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
+    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, sys_flag=None, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
         """ 
         #Masses in Msun, Apre in Rsun, Vkick in km/s, R in kpc
         #galphi,galcosth,omega, phi, costh (position, initial velocity, and kick angles) sampled randomly, unless specified (>-1)
@@ -54,7 +54,7 @@ class System:
         
         """
     
-        #Convert inputs to SI
+        # Convert inputs to SI
         Mhe = Mhe*u.M_sun.to(u.kg)
         M2 = M2*u.M_sun.to(u.kg)
         Mns = Mns*u.M_sun.to(u.kg)
@@ -62,6 +62,8 @@ class System:
         Vkick = Vkick*u.km.to(u.m)
         R = R*u.kpc.to(u.m)
         d = d*u.Mpc.to(u.m)
+
+        self.sys_flag = sys_flag
 
         if galphi: self.galphi = galphi
         else: self.galphi = np.random.uniform(0,2*np.pi)
@@ -78,9 +80,14 @@ class System:
         if omega: self.omega = omega
         else: self.omega = np.random.uniform(0,2*np.pi)
 
-        self.Mhe, self.M2, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R = Mhe, M2, Mns, Apre, epre, Vkick, gal, R
+        self.Mhe, self.M2, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R, self.d = Mhe, M2, Mns, Apre, epre, Vkick, gal, R, d
         self.Vdot = gal.Vdot
-        self.d = d
+
+        # Get projection of R in the x-y plane to save later into output file
+        x_R = self.R*np.sin(np.arccos(self.galcosth))*np.cos(self.galphi)
+        y_R = self.R*np.sin(np.arccos(self.galcosth))*np.sin(self.galphi)
+        z_R = self.R*self.galcosth
+        self.R_proj = np.sqrt(x_R**2 + y_R**2)
 
     def SN(self):
         """
@@ -231,7 +238,7 @@ class System:
         self.Y0 = R*galsinth*np.sin(galphi)
         self.Z0 = R*galcosth
 
-    def setVxyz_0(self,circflag=0):
+    def setVxyz_0(self):
         """ 
         Here, vphi and vcosth are as galphi and galcosth, and give random direction for V_sys postSN
 
@@ -242,10 +249,15 @@ class System:
         tangential to the sphere, giving Vp_rot (Vp_rot = Vp cos(omega) + (k x Vp) sin(omega)
         where k is unit vector r/R where r=(x,y,z)
 
-        Specify circflag=1 to set V0 without adding the SN-imparted velocity
+        Specify flag=circ_test to set V0 without adding the SN-imparted velocity
+        Specify flag=vkick_test to set the initial galactic velocity to 0, so that the velocity of the system is due solely to the supernova
 
 
         """
+        if self.sys_flag:
+            if self.sys_flag not in ['circ_test','vkick_test']:
+                raise ValueError("Unspecified flag '%s'" % self.sys_flag)
+
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
         R = self.R
 
@@ -255,8 +267,9 @@ class System:
 
         omega = self.omega #orientation of orbit on R-sphere (angle between Vorb and R-Z plane)
 
-        if circflag == 1: V_sys = 0 #For checking that initial conditions correspond to circular galactic orbits
+        if self.sys_flag=='circ_test': V_sys = 0 #For checking that initial conditions correspond to circular galactic orbits
         else: V_sys = self.V_sys #Velocity imparted by SN
+
         vphi = np.random.uniform(0,2*np.pi) #
         vcosth = np.random.uniform(-1,1)    # Choose random direction for system velocity
         vsinth = np.sqrt(1-(vcosth**2))    # equivalent to choosing random orientation preSN
@@ -266,6 +279,8 @@ class System:
         self.vcosth=vcosth
         self.vsinth=vsinth
         Vtot = self.getVcirc(X0,Y0,Z0)
+
+        if self.sys_flag=='vkick_test': Vtot = 0 #For checking that initial conditions correspond to circular galactic orbits
 
         vpx = Vtot * np.sin(galth-(np.pi/2))*np.cos(galphi)
         vpy = Vtot * np.sin(galth-(np.pi/2))*np.sin(galphi)
@@ -416,20 +431,24 @@ class System:
         """
         # in case we wish to save data from other flagged binaries, fill in the blank information with nans
         if self.flag == 3:
+            self.vphi = np.nan
+            self.vcosth = np.nan
             self.Tmerge = np.nan
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
         if self.flag == 2:
+            self.vphi = np.nan
+            self.vcosth = np.nan
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
 
         data = [self.M2*u.kg.to(u.M_sun), self.Mns*u.kg.to(u.M_sun), self.Mhe*u.kg.to(u.M_sun), \
                 self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, self.d*u.m.to(u.Mpc), \
-                self.R*u.m.to(u.kpc), self.galcosth, self.galphi, \
-                self.Vkick*u.m.to(u.km), self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), \
-                self.Vfinal*u.m.to(u.km), self.flag]
+                self.R*u.m.to(u.kpc), self.R_proj*u.m.to(u.kpc), self.galcosth, self.galphi, \
+                self.Vkick*u.m.to(u.km), self.phi, self.costh, self.omega, self.vphi, self.vcosth, \
+                self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), self.Vfinal*u.m.to(u.km), self.flag]
         return data
 
 

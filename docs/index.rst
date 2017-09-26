@@ -22,11 +22,17 @@ How to run astro_traj
 
 The main product of this package is the command-line executable `LIGOtraj`
 
-To run an analysis:
+To run an analysis, you need to specify a file that holds the posterior samples from your favorite PE run, an effective radius of your galaxy (in kpc), and an offset for the event (in kpc):
 
 .. code-block:: bash
 
-   $ LIGOTraj
+   $ LIGOTraj --samples 'path_to_samples' --effective-radius 'float' --offset 'float'
+
+You can specifty the number of trials and the name of your output file using flags. You can also alter the galaxy and telescope properties or add a new galaxy/telescope using dictionaries in the constr_dict.py file. 
+
+.. code-block:: bash
+
+   $ LIGOTraj --samples 'path_to_samples' --effective-radius 'float' --offset 'float' --galaxy 'NGC' --telescope 'ESO' --trails 100 --outfile 'path_to_output'
 
 For a full list of command-line argument and options, run
 

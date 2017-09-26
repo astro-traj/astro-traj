@@ -1,25 +1,28 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) Scott Coughlin (2017)
 #
-# This file is part of gwemlightcurves.
+# This file is part of astro-traj.
 #
-# gwemlightcurves is free software: you can redistribute it and/or modify
+# astro-traj is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# gwemlightcurves is distributed in the hope that it will be useful,
+# astro-traj is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with gwemlightcurves.  If not, see <http://www.gnu.org/licenses/>.
+# along with astro-traj.  If not, see <http://www.gnu.org/licenses/>.
 
-"""`system`
+"""
+Places system described by Mhe, M2, Apre, epre and position r(R,galphi,galcosth) in galaxy model gal
+Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V    
 """
 
 import numpy as np
+import pandas as pd
 import astropy.units as u
 import astropy.constants as C
 from scipy.integrate import ode
@@ -27,7 +30,8 @@ from scipy.stats import maxwell
 from scipy.stats import rv_continuous
 from scipy.integrate import quad
 
-__author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+__author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 __all__ = ['System']
 
 class System:
@@ -37,7 +41,7 @@ class System:
     Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V
     
     """
-    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, Vkick, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
+    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, sys_flag=None, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
         """ 
         #Masses in Msun, Apre in Rsun, Vkick in km/s, R in kpc
         #galphi,galcosth,omega, phi, costh (position, initial velocity, and kick angles) sampled randomly, unless specified (>-1)
@@ -50,13 +54,16 @@ class System:
         
         """
     
-        #Convert inputs to SI
+        # Convert inputs to SI
         Mhe = Mhe*u.M_sun.to(u.kg)
         M2 = M2*u.M_sun.to(u.kg)
         Mns = Mns*u.M_sun.to(u.kg)
         Apre = Apre*u.R_sun.to(u.m)
         Vkick = Vkick*u.km.to(u.m)
         R = R*u.kpc.to(u.m)
+        d = d*u.Mpc.to(u.m)
+
+        self.sys_flag = sys_flag
 
         if galphi: self.galphi = galphi
         else: self.galphi = np.random.uniform(0,2*np.pi)
@@ -73,8 +80,14 @@ class System:
         if omega: self.omega = omega
         else: self.omega = np.random.uniform(0,2*np.pi)
 
-        self.Mhe, self.M2, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R = Mhe, M2, Mns, Apre, epre, Vkick, gal, R
+        self.Mhe, self.M2, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R, self.d = Mhe, M2, Mns, Apre, epre, Vkick, gal, R, d
         self.Vdot = gal.Vdot
+
+        # Get projection of R in the x-y plane to save later into output file
+        x_R = self.R*np.sin(np.arccos(self.galcosth))*np.cos(self.galphi)
+        y_R = self.R*np.sin(np.arccos(self.galcosth))*np.sin(self.galphi)
+        z_R = self.R*self.galcosth
+        self.R_proj = np.sqrt(x_R**2 + y_R**2)
 
     def SN(self):
         """
@@ -140,6 +153,7 @@ class System:
             Kalogera and Lorimer 2000: http://iopscience.iop.org/article/10.1086/308417/meta
 
             
+            V_He;preSN is the same variable as V_r from Kalogera 1996
             
             """
             Mhe, M2, Mns, Apre, Apost, epost, Vr, Vkick = self.Mhe, self.M2, self.Mns, self.Apre, self.Apost, self.epost, self.Vr, self.Vkick
@@ -164,14 +178,18 @@ class System:
             #while the second inequality yields the minimum kick velocity required to keep the system bound if more than
             #half of the total system mass is lost in the explosion.
 
-            self.SNflag3 = (Vkick/Vr < 1 + (2*Mtot_post/Mtot_pre)**2) and ((Mtot_post/Mtot_pre > 0.5) or (Vkick/Vr>1 - (2*Mtot_post/Mtot_pre)**2))
+            self.SNflag3 = (Vkick/Vr < 1 + np.sqrt(2*Mtot_post/Mtot_pre)) and ((Mtot_post/Mtot_pre > 0.5) or (Vkick/Vr>1 - np.sqrt(2*Mtot_post/Mtot_pre)))
 
             #SNflag4: Eq 26 "An upper limit on the mass of the BH progenitor can be derived from the condition that the
             #azimuthal direction of the kick is real (Fryer & Kalogera 1997)"
             if epost>1: self.SNflag4 = False
             else:
                 kvar=2*(Apost/Apre)-(((Vkick**2)*Apost/(G*Mtot_post))+1)
-                prgmax = -M2+((2*(kvar**2))*(Mtot_post)*(Apre/Apost)/(2*(Apost/Apre)**2*(1-epost**2)-kvar-2*(Apost/Apre)*np.sqrt(1-epost**2)*((Apost/Apre)**2*(1-epost**2)-kvar)))
+
+                tmp1 = kvar**2 * Mtot_post * (Apre/Apost)
+                tmp2 = 2 * (Apost/Apre)**2 * (1-epost**2) - kvar
+                tmp3 = - 2 * (Apost/Apre) * np.sqrt(1-epost**2) * np.sqrt((Apost/Apre)**2 * (1-epost**2) - kvar)
+                prgmax = -M2 + tmp1 / (tmp2 + tmp3)
 
                 self.SNflag4 = Mhe <= prgmax
             # FIX ME: additionally, Kalogera 1996 mentions requirement that NS stars don't collide
@@ -220,7 +238,7 @@ class System:
         self.Y0 = R*galsinth*np.sin(galphi)
         self.Z0 = R*galcosth
 
-    def setVxyz_0(self,circflag=0):
+    def setVxyz_0(self):
         """ 
         Here, vphi and vcosth are as galphi and galcosth, and give random direction for V_sys postSN
 
@@ -231,10 +249,15 @@ class System:
         tangential to the sphere, giving Vp_rot (Vp_rot = Vp cos(omega) + (k x Vp) sin(omega)
         where k is unit vector r/R where r=(x,y,z)
 
-        Specify circflag=1 to set V0 without adding the SN-imparted velocity
+        Specify flag=circ_test to set V0 without adding the SN-imparted velocity
+        Specify flag=vkick_test to set the initial galactic velocity to 0, so that the velocity of the system is due solely to the supernova
 
 
         """
+        if self.sys_flag:
+            if self.sys_flag not in ['circ_test','vkick_test']:
+                raise ValueError("Unspecified flag '%s'" % self.sys_flag)
+
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
         R = self.R
 
@@ -244,8 +267,9 @@ class System:
 
         omega = self.omega #orientation of orbit on R-sphere (angle between Vorb and R-Z plane)
 
-        if circflag == 1: V_sys = 0 #For checking that initial conditions correspond to circular galactic orbits
+        if self.sys_flag=='circ_test': V_sys = 0 #For checking that initial conditions correspond to circular galactic orbits
         else: V_sys = self.V_sys #Velocity imparted by SN
+
         vphi = np.random.uniform(0,2*np.pi) #
         vcosth = np.random.uniform(-1,1)    # Choose random direction for system velocity
         vsinth = np.sqrt(1-(vcosth**2))    # equivalent to choosing random orientation preSN
@@ -255,6 +279,8 @@ class System:
         self.vcosth=vcosth
         self.vsinth=vsinth
         Vtot = self.getVcirc(X0,Y0,Z0)
+
+        if self.sys_flag=='vkick_test': Vtot = 0 #For checking that initial conditions correspond to circular galactic orbits
 
         vpx = Vtot * np.sin(galth-(np.pi/2))*np.cos(galphi)
         vpy = Vtot * np.sin(galth-(np.pi/2))*np.sin(galphi)
@@ -271,7 +297,7 @@ class System:
         #Add velocity imparted by SN
         self.Vx0, self.Vy0, self.Vz0 = Vp_rot + vsys
 
-    def setTmerge(self): #NOTE we should check that this matches up with Maggiori equations
+    def setTmerge(self, Tmin=0.0, Tmax=10.0): #NOTE we should check that this matches up with Maggiori equations
         """ 
         Calculate the inspiral time for the binary after the supernova using formulae from Peters 1964
         """
@@ -294,8 +320,8 @@ class System:
         self.Tmerge = Tmerge
 
         # see if binary inspiral time is longer than threshold (10 Gyr) or shorter than minimum time (0 for now)
-        Tmax = 10e9         # years
-        Tmin = 0            # years
+        Tmin = Tmin*1e9         # years
+        Tmax = Tmax*1e9         # years
         if (Tmerge > Tmax * u.year.to(u.s) or Tmerge < Tmin * u.year.to(u.s)):
             self.flag=2   # binary does not meet inspiral time requirements
 
@@ -400,23 +426,46 @@ class System:
 
     def write_data(self):
         """
-        # [M2, Mns, Mhe, Apre, Apost, epre, epost, R, galcosth, galphi, Vkick, Tmerge, Rmerge, Rmerge_proj, Vfinal, flag]
+        # [M2, Mns, Mhe, Apre, Apost, epre, epost, d, R, galcosth, galphi, Vkick, Tmerge, Rmerge, Rmerge_proj, Vfinal, flag]
         # write things in reasonable units (e.g., Msun, kpc, km/s ...)
         """
         # in case we wish to save data from other flagged binaries, fill in the blank information with nans
         if self.flag == 3:
+            self.vphi = np.nan
+            self.vcosth = np.nan
             self.Tmerge = np.nan
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
         if self.flag == 2:
+            self.vphi = np.nan
+            self.vcosth = np.nan
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
 
         data = [self.M2*u.kg.to(u.M_sun), self.Mns*u.kg.to(u.M_sun), self.Mhe*u.kg.to(u.M_sun), \
-                self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, \
-                self.R*u.m.to(u.kpc), self.galcosth, self.galphi, \
-                self.Vkick*u.m.to(u.km), self.Tmerge*u.s.to(u.yr)/1e9, self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), \
-                self.Vfinal*u.m.to(u.km), self.flag]
+                self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, self.d*u.m.to(u.Mpc), \
+                self.R*u.m.to(u.kpc), self.R_proj*u.m.to(u.kpc), self.galcosth, self.galphi, \
+                self.Vkick*u.m.to(u.km), self.phi, self.costh, self.omega, self.vphi, self.vcosth, \
+                self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), self.Vfinal*u.m.to(u.km), self.flag]
         return data
+
+
+    def save_evolution(self, filename):
+        '''
+        If called, will save the evolution of a given system for plotting orbital trajectory through galaxy
+        Format: [t, X, Y, Z, Vx, Vy, Vz]
+        The initial values are saved as the first item of the file
+        '''
+        # save initial conditions
+        initial = np.atleast_2d([self.Vkick,self.Mhe,self.Apre,self.Apost,self.Rmerge,self.Vxcirc0,self.Vycirc0,self.Vzcirc0])
+        dfi = pd.DataFrame(initial, columns=['Vkick','Mhe','Apre','Apost','Rmerge','vx','vy','vz'])
+        dfi.to_csv('evolution/'+filename+'_ini.dat', index=False)        
+
+        # save evolution
+        evolution = np.vstack([[self.t],[self.X],[self.Y],[self.Z],[self.Vx],[self.Vy],[self.Vz]]).T
+        df = pd.DataFrame(evolution, columns=['t','x','y','z','vx','vy','vz'])
+        df.to_csv('evolution/'+filename+'.dat', index=False)
+
+

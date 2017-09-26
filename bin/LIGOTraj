@@ -24,8 +24,6 @@ import pandas as pd
 
 import h5py
 
-import pdb
-
 from astro_traj import __version__
 from astro_traj.system import System
 from astro_traj.galaxy import Hernquist_NFW
@@ -52,13 +50,22 @@ def parse_commandline():
     4: Energy conservation requirement not met!!!
     """)
     parser.add_argument('-V', '--version', action='version', version=__version__)
-    parser.add_argument('--galaxy', help="name of galaxy", required=True)
-    parser.add_argument('--offset', type=float, help="offset from center of galaxy of  event", required=True)
-    parser.add_argument('--effective-radius', type=float, help="effective radius", required=True)
-    parser.add_argument('-s', '--filename-samples', help="Path to posterior samples", required=True)
-    parser.add_argument('-t', '--telescope', help="Name of telescope", required=True)
+    parser.add_argument('-o', '--offset', type=float, help="Offset from center of galaxy of event", required=True)
+    parser.add_argument('-r', '--effective-radius', type=float, help="Effective radius", required=True)
+    parser.add_argument('-s', '--samples', help="Path to posterior samples", required=True)
+    parser.add_argument('-g', '--galaxy', type=str, default='NGC', help="Name of galaxy that is pulled from the dictionaries in constr_dict.py. Default=NGC")
+    parser.add_argument('-t', '--telescope', type=str, default='ESO', help="Name of telescope that is pulled from the dictionaries in constr_dict.py. Default=ESO")
     parser.add_argument('-T', '--trials', type=int, default=1, help="Specify the number of trials. Default=1")
     parser.add_argument('-f', '--outfile', type=str, default='output', help="Name of the output file. Default=output")
+
+    parser.add_argument('--Apre', type=str, default='uniform', help="Specify sampling procedure for initial semi-major axis. Default=uniform")
+    parser.add_argument('--Mhe', type=str, default='uniform', help="Specify sampling procedure for helium star mass. Default=uniform")
+    parser.add_argument('--Vkick', type=str, default='maxwellian', help="Specify sampling procedure for kick velocity. Default=maxwellian")
+    parser.add_argument('--Ms', type=str, default='posterior', help="Specify sampling procedure for NS masses. Default=posterior")
+    parser.add_argument('--epre', type=str, default='circularized', help="Specify sampling procedure for initial eccentricity. Default=circularized")
+    parser.add_argument('--distance', type=str, default='median', help="Specify sampling procedure for the distance. Default=median")
+
+    parser.add_argument('--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick. Default=delta_function")
     args = parser.parse_args()
 
     return args
@@ -79,6 +86,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     4: Energy conservation requirement not met!!!
     """
 
+    print "\nInitializing galaxy and reading inputs..."
     # set cosmology to Reiss [h = H0/(100 km/s/Mpc)]
     h = 0.73
     # Info from "GW"
@@ -88,12 +96,6 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     # Infer about the telescope that made the measurements (for angular resolution)
     tele = constr_dict.telescope(telescope)
 
-    # Calculate angular resolution of the telescope, convert to physical size at the distance of the kilonova
-    theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
-    D_theta = Galaxy['d']*np.tan(theta)                # units of Mpc
-    Galaxy['offset_uncer'] = D_theta*1000.0            # offset uncertainty due to angular resolution of telescope (kpc)
-
-
     # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
     gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], h, rcut=100)
     samp=Sample(gal)
@@ -102,7 +104,8 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
 
     # Create empty output file
-    df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'R', 'galcosth', 'galphi', 'Vkick', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'flag'])
+    df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', \
+                                'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'flag'])
     df.to_csv(args.outfile+'.dat', sep=',', index=False)
 
 
@@ -114,42 +117,48 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     dEfrac = 0.0
 
     # Initialize random draws for some parameters based on number of trials
+    print "\nSampling binary parameters..."
+    
+    Mcomp_dist, Mns_dist = samp.sample_masses(samples, method=args.Ms, size=Nsys)
+    # (Msun)
 
-    # Msun
-    Mcomp_dist, Mns_dist = samp.sample_masses(GW['m1'], GW['m2'], GW['m1_sigma'], GW['m2_sigma'], size=Nsys)
+    d_dist = samp.sample_distance(samples, method=args.distance, size=Nsys)
+    # (Mpc)
 
-    # Rsun
-    Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, size=Nsys)
+    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method=args.Mhe, size=Nsys)
+    # (Msun)
 
-    # Msun
-    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist)
+    Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method=args.Apre, size=Nsys)
+    # (Rsun)
 
-    # km/s
-    Vkick_dist = samp.sample_Vkick_maxwellian(size=Nsys)
+    epre_dist = samp.sample_epre(method=args.epre, size=Nsys)
+    # (dimensionless)
 
-    # kpc
+    Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys)
+    # (km/s)
+
     R_dist = samp.sample_R(PDF, Nsys)
+    # (kpc)
 
-    for R, Mcomp, Mns, Apre, Mhe, Vkick in zip(R_dist, Mcomp_dist, Mns_dist, Apre_dist, Mhe_dist, Vkick_dist):
-
-        # Sample necessary parameters
-        epre = 0.0                                  # assume binary is circularized before SN2
+    
+    print "\nStarting the evolution of sampled binaries!"
+    for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist, epre_dist, Mhe_dist, Vkick_dist):
+    
+        # Calculate angular resolution of the telescope, convert to physical size at the distance of merger
+        theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
+        D_theta = d*np.tan(theta)                          # units of Mpc
+        Galaxy['offset_uncer'] = D_theta*u.Mpc.to(u.kpc)   # offset uncertainty from angular resolution of telescope (kpc)
 
         # initialize System class with pertinent parameters
-        T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, Vkick)
+        T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)
         # implement a SN kick to the system, and check to see if binary is disrupted
         T.SN()
         # if binary is disrupted, move on to next system
         if T.flag == 3:
             continue
 
-        # choose random location on sphere of radius R
-        T.setXYZ_0()
-        # choose random direction for circular velocity, and add SN-imparted velocity to get V0
-        T.setVxyz_0()
-
-        # set merger time as tmax for trajectory integration
-        T.setTmerge()
+        # set merger time for trajectory integration, specify Tmin and Tmax in Gyr
+        T.setTmerge(Tmin=0.0, Tmax=14.0)
         # if binary does not meet inspiral time requirements, move on to next system
         if T.flag == 2:
             outdata = T.write_data()
@@ -157,6 +166,11 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
             f.write(str(outdata)[1:-1]+'\n')
             f.close()
             continue
+
+        # choose random location on sphere of radius R
+        T.setXYZ_0()
+        # choose random direction for circular velocity, and add SN-imparted velocity to get V0
+        T.setVxyz_0()
 
         # integrate trajectory until Tmerge
         T.doMotion()
@@ -177,14 +191,15 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         f.close()
 
 
+
     ########################
     ####### END LOOP #######
     ########################
 
 
     # print maximum energy difference to check for conservation of energy
-    print 'Maximum energy difference between initial post-SN energy and final energy: %.20f' % dEfrac
+    print '\nFinished! Maximum energy difference between initial post-SN energy and final energy: %.20f' % dEfrac
 
 if __name__ == '__main__':
     args = parse_commandline()
-    main(args.filename_samples, args.galaxy, args.offset, args.effective_radius, args.telescope)
+    main(args.samples, args.galaxy, args.offset, args.effective_radius, args.telescope)

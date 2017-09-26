@@ -1,26 +1,29 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) Scott Coughlin (2017)
 #
-# This file is part of gwemlightcurves.
+# This file is part of astro-traj.
 #
-# gwemlightcurves is free software: you can redistribute it and/or modify
+# astro-traj is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# gwemlightcurves is distributed in the hope that it will be useful,
+# astro-traj is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with gwemlightcurves.  If not, see <http://www.gnu.org/licenses/>.
+# along with astro-traj.  If not, see <http://www.gnu.org/licenses/>.
 
 """`sample`
 """
 
 from astropy.table import Table
 import numpy as np
+
+__author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
 def GW(filename_samples):
     """
@@ -38,6 +41,9 @@ def GW(filename_samples):
 
 
 def galaxy(galaxy_name, filename_samples, r_eff, offset, h):
+    """
+    Construct Galaxy dict
+    """
 
     # Dic of Galaxies containing dicts about properities
     Galaxy_Dict = {
@@ -52,10 +58,7 @@ def galaxy(galaxy_name, filename_samples, r_eff, offset, h):
     }
 
     # Dic of Galaxies containing dicts about properities
-    samples_out = Table.read(filename_samples, format='ascii')
-
     Galaxy = Galaxy_Dict[galaxy_name]
-    Galaxy['d'] = np.mean(samples_out['distance'])
     Galaxy['R_eff'] = r_eff
     Galaxy['offset'] = offset
 
@@ -63,6 +66,9 @@ def galaxy(galaxy_name, filename_samples, r_eff, offset, h):
     
 
 def telescope(telescope_name):
+    """
+    Determine D and lambda of a given telescope
+    """
 
     # Infer about the telescope that made the measurements (for angular resolution)
     telescope_dict = {

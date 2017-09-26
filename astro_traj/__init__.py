@@ -22,7 +22,7 @@
 from ._version import get_versions
 
 __version__ = get_versions()['version']
-__author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
-__credits__ = 'Duncan Macleod <duncan.macleod@ligo.org>'
+__author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
+__credits__ = ['Scott Coughlin <scott.coughlin@ligo.org>', 'Duncan Macleod <duncan.macleod@ligo.org>']
 
 del get_versions

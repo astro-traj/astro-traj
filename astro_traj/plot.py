@@ -31,23 +31,29 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.mlab import griddata
 from scipy.stats import maxwell
-import corner
 import pdb
 
 __author__ = 'Michael Zevin <michael.zevin@ligo.org>'
 __all__ = ['Plotting']
 
 class Plot:
-    def __init__(self, samples, galaxy_name, offset, r_eff, telescope, output=None):
+    def __init__(self, samples, galaxy_name, offset, r_eff, telescope,suptitle, output=None):
         '''
         initialize with values passed to gal and output file. outfile must be a string.
         '''
+        if output:
+            outfile = str(output)+'.dat'
+            data = pd.read_csv(outfile)
+            self.data = data
+            self.d = data['d'].values[0]
+    
         # set cosmology to Reiss [h = H0/(100 km/s/Mpc)]
         h = 0.73
         # Info from "GW"
         GW = constr_dict.GW(samples)
         # Info about the galaxy
         Galaxy = constr_dict.galaxy(galaxy_name, samples, r_eff, offset, h)
+        Galaxy['d']=self.d
         # Infer about the telescope that made the measurements (for angular resolution)
         tele = constr_dict.telescope(telescope)
         # Calculate angular resolution of the telescope, convert to physical size at the distance of the kilonova
@@ -71,15 +77,11 @@ class Plot:
         self.rcut = gal.rcut
         self.abulge = gal.abulge
         self.Rs = gal.Rs
-
+        self.suptitle = suptitle
         self.Ubulge = gal.Ubulge
         self.Uhalo = gal.Uhalo
 
-        if output:
-            outfile = str(output)+'.dat'
-            data = pd.read_csv(outfile)
-            self.data = data
-    
+
 
     def cutTmerge(self,Tmerge,tmin,tmax = None):
         #tmin, tmax in Gyr
@@ -89,13 +91,12 @@ class Plot:
         else:
             return np.where(Tmerge>tmin)[0]
         
-    def getRhe(Mhe):
+    def getRhe(self,Mhe):
         if Mhe<=2.5:
             return 3.0965-(2.013*np.log10(Mhe))
         else:
             return 0.0557*((np.log10(Mhe)-0.172)**-2.5)
-    def getRL(self,Mhe,M2,Apre):
-        epre=np.full(Mhe.shape,0)
+    def getRL(self,Mhe,M2,Apre,epre):
         
         exp1=1.0/3.0
         exp2=2.0/3.0
@@ -108,6 +109,11 @@ class Plot:
         return RL
 
         
+    def cutRLO(self, Mhe,M2,Apre):
+        epre=np.full(Mhe.shape,0.0)
+        Rhe = np.array([self.getRhe(Mhe[i]) for i in range(len(Mhe))])
+        RL = self.getRL(Mhe, M2, Apre, epre)
+        return np.where(RL<Rhe)[0]
     
     def cutOffset(self,Rmerge_proj,offset):
         #offset in kpc
@@ -115,16 +121,141 @@ class Plot:
         #self.SigOffset(offset)
         
         return np.where((Rmerge_proj > offset-SigOffset) & (Rmerge_proj < offset  + SigOffset))[0]
-    def BigOffset1D(self, filename, subject, xlabel, nOffset=[1.0 ,2./3.,2.0,3.0,5.0], norm = True,maxCut=None):
+    def getxlabel(self,x,xlabel):
+        mean = str(np.round(np.mean(x),1))
+        med = str(np.round(np.median(x),1))
+        return xlabel + '\nMean: '+mean+' Median: '+med
+        
+    def BigRLO1D(self, filename, subject, xlabel,  TFLAG = [1,9], TWINDOW=[[1.9,2.1],[4.9,5.1],[7.9,8.1]],maxCut=None):
+        from matplotlib import rcParams,ticker
+        from functools import reduce
+
+        ylabel = 'PDF'
+        inter = np.intersect1d
+
+        rcParams.update({'font.size': 18})
+        norm = False
+        Tmerge = self.data['Tmerge'].values
+        flag = self.data['flag'].values
+        Mhe = self.data['Mhe'].values
+        M2 = self.data['M2'].values
+        Apre = self.data['Apre'].values
+        
+        fig = plt.figure(figsize = (40,20))
+        fig.suptitle(self.suptitle)
+        ax0 = fig.add_subplot(231)
+        axhalf = fig.add_subplot(232)
+        ax1 = fig.add_subplot(233)
+        ax2 = fig.add_subplot(234)
+        axw1 = fig.add_subplot(235)
+        axw2 = fig.add_subplot(236)
+        
+        if maxCut:
+            ImaxCut = np.where(subject<maxCut)[0]
+            Tmerge = Tmerge[ImaxCut]
+            flag = flag[ImaxCut]
+            subject = subject[ImaxCut]
+            Mhe = Mhe[ImaxCut]
+            M2 = M2[ImaxCut]
+            Apre = Apre[ImaxCut]
+        
+        Iwin = np.where(flag == 1)[0]
+
+
+
+
+        Constant = float(len(subject[Iwin]))
+
+
+        Amin,Amax = 0.1,10.0
+        Mmin,Mmax = np.min(self.data['Mhe'].values),8.0
+
+        ax0.set_title('All Systems')
+        axhalf.set_title('Tmerge > '+str(TFLAG[0])+' Gyrs')
+        ax1.set_title('Tmerge > '+str(TFLAG[1])+' Gyrs')
+        ax2.set_title(str(TWINDOW[0][0])+' Gyrs > Tmerge > '+str(TWINDOW[0][1])+' Gyrs')
+        axw1.set_title(str(TWINDOW[1][0])+' Gyrs > Tmerge > '+str(TWINDOW[1][1])+' Gyrs')
+        axw2.set_title(str(TWINDOW[2][0])+' Gyrs > Tmerge > '+str(TWINDOW[2][1])+' Gyrs')
+        
+        ax0.set_ylabel(ylabel)
+        axhalf.set_ylabel(ylabel)
+        ax1.set_ylabel(ylabel)
+        ax2.set_ylabel(ylabel)
+        axw1.set_ylabel(ylabel)
+        axw2.set_ylabel(ylabel)
+
+        ax0.set_xlabel(xlabel)
+        axhalf.set_xlabel(xlabel)
+        ax1.set_xlabel(xlabel)
+        ax2.set_xlabel(xlabel)
+        axw1.set_xlabel(xlabel)
+        axw2.set_xlabel(xlabel)
+        if xlabel == '$R_{birth}$ in kpc':
+            xx = np.linspace(0,max(subject),1000)
+            Rpdf=self.Rpdf.pdf
+            Constant = 1.0/self.Rpdf.cdf(10000000000000000000)
+
+
+            ax0.axvline(self.Galaxy['offset'],color='b',label = 'Observed Offset')
+            axhalf.axvline(self.Galaxy['offset'],color='b',label = 'Observed Offset')
+            ax1.axvline(self.Galaxy['offset'],color='b',label = 'Observed Offset')
+            ax2.axvline(self.Galaxy['offset'],color='b',label = 'Observed Offset')
+            axw1.axvline(self.Galaxy['offset'],color='b',label = 'Observed Offset')
+            axw2.axvline(self.Galaxy['offset'],color='b',label = 'Observed Offset')
+
+
+        Iall=np.array(range(len(subject)))
+        I0 = Iwin
+        Ihalf = inter(self.cutTmerge(Tmerge,TFLAG[0]),Iwin)
+        I1 = inter(self.cutTmerge(Tmerge,TFLAG[1]),Iwin)
+        
+        I2 = inter(self.cutTmerge(Tmerge,TWINDOW[0][0],tmax=TWINDOW[0][1]),Iwin)
+        Iw1 = inter(self.cutTmerge(Tmerge,TWINDOW[1][0],tmax=TWINDOW[1][1]),Iwin)
+        Iw2 = inter(self.cutTmerge(Tmerge,TWINDOW[2][0],tmax=TWINDOW[2][1]),Iwin)
+        IRLO =  self.cutRLO(Mhe,M2,Apre)
+
+        nbins = int(np.sqrt(len(Iw2)))
+        
+        colorNRLO='g'
+
+        colorRLO = 'r'
+        RLOlabel = 'RLO Matches'
+        Alllabel = 'All Matches'
+        N, BINS, PATCHES = ax0.hist(subject[I0], bins=nbins, normed = norm, color = colorNRLO,label=Alllabel)
+        n, bins, patches = axhalf.hist(subject[Ihalf], bins=BINS, normed = norm, color = colorNRLO,label=Alllabel)
+        n, bins, patches = ax1.hist(subject[I1], bins=BINS, normed = norm, color = colorNRLO,label=Alllabel)
+        n, bins, patches = ax2.hist(subject[I2], bins=BINS, normed = norm, color = colorNRLO,label=Alllabel)
+        n, bins, patches = axw1.hist(subject[Iw1], bins=BINS, normed = norm, color = colorNRLO,label=Alllabel)
+        n, bins, patches = axw2.hist(subject[Iw2], bins=BINS, normed = norm, color = colorNRLO,label=Alllabel)
+
+
+
+        n, bins, patches = ax0.hist(subject[inter(I0,IRLO)], bins=BINS, normed=norm, color=colorRLO, label = RLOlabel)
+        n, bins, patches = axhalf.hist(subject[inter(Ihalf,IRLO)], bins=BINS, normed=norm, color=colorRLO, label = RLOlabel)
+        n, bins, patches = ax1.hist(subject[inter(I1,IRLO)], bins=BINS, normed=norm, color=colorRLO, label = RLOlabel)
+        n, bins, patches = ax2.hist(subject[inter(I2,IRLO)], bins=BINS, normed=norm, color=colorRLO, label = RLOlabel)
+        n, bins, patches = axw1.hist(subject[inter(Iw1,IRLO)], bins=BINS, normed=norm, color=colorRLO, label = RLOlabel)
+        n, bins, patches = axw2.hist(subject[inter(Iw2,IRLO)], bins=BINS, normed=norm, color=colorRLO, label = RLOlabel)
+
+        ax1.legend(loc=0)
+
+
+        fig.savefig(filename)
+    def BigOffset1D(self, filename, subject, xlabel, nOffset=[1.0 ,2./3.,2.0,3.0,5.0],TWINDOW=None,title_suffix=None, norm = True,maxCut=None, RLO=False,Apresamp = 'uniform',Vsamp = 'maxwell'):
         from matplotlib import rcParams,ticker
         rcParams.update({'font.size': 18})
         
         offset = self.Galaxy['offset']
         Tmerge = self.data['Tmerge'].values
         Rmerge_proj = self.data['Rmerge_proj'].values.astype('float')
+        Mhe = self.data['Mhe'].values
+        
         flag = self.data['flag'].values
         fig = plt.figure(figsize = (40,20))
-
+        if title_suffix:
+            suptitle = self.suptitle+title_suffix
+            fig.suptitle(suptitle)
+        else: fig.suptitle(self.suptitle)
         ax0 = fig.add_subplot(231)
         axhalf = fig.add_subplot(232)
         ax1 = fig.add_subplot(233)
@@ -162,6 +293,7 @@ class Plot:
 
         Amin,Amax = 0.1,10.0
         Mmin,Mmax = np.min(self.data['Mhe'].values),8.0
+        Vmin,Vmax = 0,2500
 
         ax0.set_title('Observed Offset ('+str(offset)+' kpc)')
         axhalf.set_title('Offset = '+str(np.round(nOffset[0],2))+'x Observed Offset')
@@ -177,22 +309,27 @@ class Plot:
         axw1.set_ylabel(ylabel)
         axw2.set_ylabel(ylabel)
 
-        ax0.set_xlabel(xlabel)
-        axhalf.set_xlabel(xlabel)
-        ax1.set_xlabel(xlabel)
-        ax2.set_xlabel(xlabel)
-        axw1.set_xlabel(xlabel)
-        axw2.set_xlabel(xlabel)
+
 
         
         if xlabel == r'$A_{pre}$ in $R_{\odot}$':
+            if Apresamp == 'uniform':
+                ax0.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                axhalf.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                ax1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                ax2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                axw1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                axw2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            else:
+                xx = np.linspace(Amin,Amax,1000)
+                ax0.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                axhalf.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                ax1.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                ax2.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                axw1.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                axw2.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
 
-            ax0.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            axhalf.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            ax1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            ax2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            axw1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            axw2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                
 
         if xlabel == r'$M_{He}$ in $M_{\odot}$':
 
@@ -204,18 +341,28 @@ class Plot:
             axw2.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
 
         if xlabel == '$V_{kick}$ in km/s':
-            xx = np.linspace(0,max(subject),1000)
+            if Vsamp == 'uniform':
+                ax0.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution')
+                axhalf.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution') 
+                ax1.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution') 
+                ax2.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution') 
+                axw1.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution') 
+                axw2.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution')
+            else:
 
-            ax0.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            axhalf.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            ax1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            ax2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            axw1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            axw2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                xx = np.linspace(0,max(subject),1000)
+
+                ax0.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                axhalf.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                ax1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                ax2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                axw1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                axw2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
 
         if xlabel == '$R_{birth}$ in kpc':
             xx = np.linspace(0,max(subject),1000)
             Rpdf=self.Rpdf.pdf
+            Constant = 1.0/self.Rpdf.cdf(1000000)
 
             ax0.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
             axhalf.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
@@ -232,8 +379,17 @@ class Plot:
         I2 = np.intersect1d(self.cutOffset(Rmerge_proj,nOffset[2]*offset),Ihubble)
         Iw1 = np.intersect1d(self.cutOffset(Rmerge_proj,nOffset[3]*offset),Ihubble)
         Iw2 = np.intersect1d(self.cutOffset(Rmerge_proj,nOffset[4]*offset),Ihubble)
+        if TWINDOW != None:
+         I0 = np.intersect1d(I0,self.cutTmerge(Tmerge,TWINDOW[0],tmax=TWINDOW[1]))
+         Ihalf = np.intersect1d(Ihalf,self.cutTmerge(Tmerge,TWINDOW[0],tmax=TWINDOW[1]))
+         I1 = np.intersect1d(I1,self.cutTmerge(Tmerge,TWINDOW[0],tmax=TWINDOW[1]))
+         I2 = np.intersect1d(I2,self.cutTmerge(Tmerge,TWINDOW[0],tmax=TWINDOW[1]))
+         Iw1 = np.intersect1d(Iw1,self.cutTmerge(Tmerge,TWINDOW[0],tmax=TWINDOW[1]))
+         Iw2 = np.intersect1d(Iw2,self.cutTmerge(Tmerge,TWINDOW[0],tmax=TWINDOW[1]))
 
-        nbins =int(np.sqrt(len(Iw2)))
+        
+
+        nbins =30
         print nbins
         colorA = '.7'
 
@@ -255,12 +411,20 @@ class Plot:
         n, bins, patches = axw1.hist(subject[Iw1], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset constraints')
         n, bins, patches = axw2.hist(subject[Iw2], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset constraints')
 
+        getxlabel = self.getxlabel
+        ax0.set_xlabel(getxlabel(subject[I0],xlabel))
+        axhalf.set_xlabel(getxlabel(subject[Ihalf],xlabel))
+        ax1.set_xlabel(getxlabel(subject[I1],xlabel))
+        ax2.set_xlabel(getxlabel(subject[I2],xlabel))
+        axw1.set_xlabel(getxlabel(subject[Iw1],xlabel))
+        axw2.set_xlabel(getxlabel(subject[Iw2],xlabel))
         ax1.legend(loc=0)
 
 
         fig.savefig(filename)
-   
-    def Big1D(self, filename, subject, xlabel, TFLAG = [0.5,1,2], TWINDOW=[[1,2],[2,3]],norm = True,maxCut=None):
+
+        
+    def Big1D(self, filename, subject, xlabel, TFLAG = [1,9], TWINDOW=[[1.9,2.1],[4.9,5.1],[7.9,8.1]],norm = True,maxCut=None,Apresamp = 'uniform',Vsamp = 'maxwell'):
         from matplotlib import rcParams,ticker
         rcParams.update({'font.size': 18})
 
@@ -268,6 +432,7 @@ class Plot:
         flag = self.data['flag'].values
         fig = plt.figure(figsize = (40,20))
 
+        fig.suptitle(self.suptitle)
         ax0 = fig.add_subplot(231)
         axhalf = fig.add_subplot(232)
         ax1 = fig.add_subplot(233)
@@ -303,13 +468,13 @@ class Plot:
 
         Amin,Amax = 0.1,10.0
         Mmin,Mmax = np.min(self.data['Mhe'].values),8.0
-
+        Vmin, Vmax = 0,2500.0
         ax0.set_title('All Systems')
         axhalf.set_title('Tmerge > '+str(TFLAG[0])+' Gyrs')
         ax1.set_title('Tmerge > '+str(TFLAG[1])+' Gyrs')
-        ax2.set_title('Tmerge > '+str(TFLAG[2])+' Gyrs')
-        axw1.set_title(str(TWINDOW[0][0])+' Gyrs > Tmerge > '+str(TWINDOW[0][1])+' Gyrs')
-        axw2.set_title(str(TWINDOW[1][0])+' Gyrs > Tmerge > '+str(TWINDOW[1][1])+' Gyrs')
+        ax1.set_title(str(TWINDOW[0][0])+' Gyrs > Tmerge > '+str(TWINDOW[0][1])+' Gyrs')
+        axw1.set_title(str(TWINDOW[1][0])+' Gyrs > Tmerge > '+str(TWINDOW[1][1])+' Gyrs')
+        axw2.set_title(str(TWINDOW[2][0])+' Gyrs > Tmerge > '+str(TWINDOW[2][1])+' Gyrs')
         
         ax0.set_ylabel(ylabel)
         axhalf.set_ylabel(ylabel)
@@ -318,23 +483,24 @@ class Plot:
         axw1.set_ylabel(ylabel)
         axw2.set_ylabel(ylabel)
 
-        ax0.set_xlabel(xlabel)
-        axhalf.set_xlabel(xlabel)
-        ax1.set_xlabel(xlabel)
-        ax2.set_xlabel(xlabel)
-        axw1.set_xlabel(xlabel)
-        axw2.set_xlabel(xlabel)
 
         
         if xlabel == r'$A_{pre}$ in $R_{\odot}$':
-
-            ax0.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            axhalf.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            ax1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            ax2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            axw1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-            axw2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
-
+            if Apresamp == 'uniform':
+                ax0.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                axhalf.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                ax1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                ax2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                axw1.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+                axw2.axhline(Constant/(Amax-Amin),color='g',label = 'Input Distribution')
+            else:
+                xx = np.linspace(Amin,Amax,1000)
+                ax0.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                axhalf.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                ax1.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                ax2.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                axw1.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
+                axw2.plot(xx,Constant/(xx*(np.log10(Amax)-np.log10(Amin))),'g-',label='Input Distribution')
         if xlabel == r'$M_{He}$ in $M_{\odot}$':
 
             ax0.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
@@ -345,18 +511,28 @@ class Plot:
             axw2.axhline(Constant/(Mmax-Mmin),color='g',label = 'Input Distribution')
 
         if xlabel == '$V_{kick}$ in km/s':
-            xx = np.linspace(0,max(subject),1000)
+            if Vsamp == 'uniform':
+                ax0.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution')
+                axhalf.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution') 
+                ax1.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution') 
+                ax2.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution') 
+                axw1.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution') 
+                axw2.axhline(Constant/(Vmax-Vmin),color='g',label = 'Input Distribution')
+            else:
 
-            ax0.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            axhalf.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            ax1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            ax2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            axw1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
-            axw2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                xx = np.linspace(0,max(subject),1000)
+
+                ax0.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                axhalf.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                ax1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                ax2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                axw1.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
+                axw2.plot(xx,Constant*maxwell.pdf(xx,loc=0,scale=265.0),'g-',label='Input Distribution')
 
         if xlabel == '$R_{birth}$ in kpc':
             xx = np.linspace(0,max(subject),1000)
             Rpdf=self.Rpdf.pdf
+            Constant = 1.0/self.Rpdf.cdf(1000000)
 
             ax0.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
             axhalf.plot(xx,Constant*Rpdf(xx),'g-',label='Input Distribution')
@@ -370,11 +546,12 @@ class Plot:
         I0 = Iwin
         Ihalf = np.intersect1d(self.cutTmerge(Tmerge,TFLAG[0]),Iwin)
         I1 = np.intersect1d(self.cutTmerge(Tmerge,TFLAG[1]),Iwin)
-        I2 = np.intersect1d(self.cutTmerge(Tmerge,TFLAG[2]),Iwin)
-        Iw1 = np.intersect1d(self.cutTmerge(Tmerge,TWINDOW[0][0],tmax=TWINDOW[0][1]),Iwin)
-        Iw2 = np.intersect1d(self.cutTmerge(Tmerge,TWINDOW[1][0],tmax=TWINDOW[1][1]),Iwin)
+        I2 = np.intersect1d(self.cutTmerge(Tmerge,TWINDOW[0][0],tmax=TWINDOW[0][1]),Iwin)
 
-        nbins = int(np.sqrt(len(Iw2)))
+        Iw1 = np.intersect1d(self.cutTmerge(Tmerge,TWINDOW[1][0],tmax=TWINDOW[1][1]),Iwin)
+        Iw2 = np.intersect1d(self.cutTmerge(Tmerge,TWINDOW[2][0],tmax=TWINDOW[2][1]),Iwin)
+
+        nbins = 40 #int(np.sqrt(len(Iw2)))
         
         colorA = '.7'
 
@@ -397,8 +574,13 @@ class Plot:
         n, bins, patches = axw2.hist(subject[Iw2], bins=BINS, normed=norm, color=colorS, alpha=alphaS, label = 'Matches to offset and Tmerge constraints')
 
         ax1.legend(loc=0)
-
-
+        getxlabel = self.getxlabel
+        ax0.set_xlabel(getxlabel(subject[I0],xlabel))
+        axhalf.set_xlabel(getxlabel(subject[Ihalf],xlabel))
+        ax1.set_xlabel(getxlabel(subject[I1],xlabel))
+        ax2.set_xlabel(getxlabel(subject[I2],xlabel))
+        axw1.set_xlabel(getxlabel(subject[Iw1],xlabel))
+        axw2.set_xlabel(getxlabel(subject[Iw2],xlabel))
         fig.savefig(filename)
    
     def input1Dpdf(self,filename='other.png',tflag=None):

@@ -104,7 +104,8 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
 
     # Create empty output file
-    df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', 'Vkick', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'flag'])
+    df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', \
+                                'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'flag'])
     df.to_csv(args.outfile+'.dat', sep=',', index=False)
 
 

@@ -54,7 +54,7 @@ class System:
         
         """
     
-        #Convert inputs to SI
+        # Convert inputs to SI
         Mhe = Mhe*u.M_sun.to(u.kg)
         M2 = M2*u.M_sun.to(u.kg)
         Mns = Mns*u.M_sun.to(u.kg)
@@ -80,9 +80,14 @@ class System:
         if omega: self.omega = omega
         else: self.omega = np.random.uniform(0,2*np.pi)
 
-        self.Mhe, self.M2, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R = Mhe, M2, Mns, Apre, epre, Vkick, gal, R
+        self.Mhe, self.M2, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R, self.d = Mhe, M2, Mns, Apre, epre, Vkick, gal, R, d
         self.Vdot = gal.Vdot
-        self.d = d
+
+        # Get projection of R in the x-y plane to save later into output file
+        x_R = self.R*np.sin(np.arccos(self.galcosth))*np.cos(self.galphi)
+        y_R = self.R*np.sin(np.arccos(self.galcosth))*np.sin(self.galphi)
+        z_R = self.R*self.galcosth
+        self.R_proj = np.sqrt(x_R**2 + y_R**2)
 
     def SN(self):
         """
@@ -436,9 +441,9 @@ class System:
 
         data = [self.M2*u.kg.to(u.M_sun), self.Mns*u.kg.to(u.M_sun), self.Mhe*u.kg.to(u.M_sun), \
                 self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, self.d*u.m.to(u.Mpc), \
-                self.R*u.m.to(u.kpc), self.galcosth, self.galphi, \
-                self.Vkick*u.m.to(u.km), self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), \
-                self.Vfinal*u.m.to(u.km), self.flag]
+                self.R*u.m.to(u.kpc), self.R_proj*u.m.to(u.kpc), self.galcosth, self.galphi, \
+                self.Vkick*u.m.to(u.km), self.phi, self.costh, self.omega, self.vphi, self.vcosth, \
+                self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), self.Vfinal*u.m.to(u.km), self.flag]
         return data
 
 

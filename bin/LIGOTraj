@@ -63,7 +63,7 @@ def parse_commandline():
     parser.add_argument('--Vkick', type=str, default='maxwellian', help="Specify sampling procedure for kick velocity. Default=maxwellian")
     parser.add_argument('--Ms', type=str, default='posterior', help="Specify sampling procedure for NS masses. Default=posterior")
     parser.add_argument('--epre', type=str, default='circularized', help="Specify sampling procedure for initial eccentricity. Default=circularized")
-    parser.add_argument('--distance', type=str, default='delta_function', help="Specify sampling procedure for the distance. Default=delta_function")
+    parser.add_argument('--distance', type=str, default='median', help="Specify sampling procedure for the distance. Default=median")
 
     parser.add_argument('--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick. Default=delta_function")
     args = parser.parse_args()
@@ -140,7 +140,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     R_dist = samp.sample_R(PDF, Nsys)
     # (kpc)
 
-
+    
     print "\nStarting the evolution of sampled binaries!"
     for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist, epre_dist, Mhe_dist, Vkick_dist):
     

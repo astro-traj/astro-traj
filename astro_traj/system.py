@@ -41,7 +41,7 @@ class System:
     Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V
     
     """
-    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, sys_flag, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
+    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, sys_flag=None, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
         """ 
         #Masses in Msun, Apre in Rsun, Vkick in km/s, R in kpc
         #galphi,galcosth,omega, phi, costh (position, initial velocity, and kick angles) sampled randomly, unless specified (>-1)
@@ -63,7 +63,7 @@ class System:
         R = R*u.kpc.to(u.m)
         d = d*u.Mpc.to(u.m)
 
-        if sys_flag: self.sys_flag = sys_flag
+        self.sys_flag = sys_flag
 
         if galphi: self.galphi = galphi
         else: self.galphi = np.random.uniform(0,2*np.pi)
@@ -254,8 +254,9 @@ class System:
 
 
         """
-        if self.sys_flag not in ['circ_test','vkick_test']:
-            raise ValueError("Unspecified flag %s" % args.sys_flag)
+        if self.sys_flag:
+            if self.sys_flag not in ['circ_test','vkick_test']:
+                raise ValueError("Unspecified flag '%s'" % self.sys_flag)
 
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
         R = self.R
@@ -430,11 +431,15 @@ class System:
         """
         # in case we wish to save data from other flagged binaries, fill in the blank information with nans
         if self.flag == 3:
+            self.vphi = np.nan
+            self.vcosth = np.nan
             self.Tmerge = np.nan
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
         if self.flag == 2:
+            self.vphi = np.nan
+            self.vcosth = np.nan
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan

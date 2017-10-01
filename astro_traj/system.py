@@ -64,7 +64,7 @@ class System:
         d = d*u.Mpc.to(u.m)
 
         self.sys_flag = sys_flag
-
+        
         if galphi: self.galphi = galphi
         else: self.galphi = np.random.uniform(0,2*np.pi)
 
@@ -213,7 +213,7 @@ class System:
         FIXME: Will have to change for spiral potential, as circular velocity is assumed to be within the disk
         """
         Vdot = self.Vdot
-
+        
         COORD=[0,0,0,X,Y,Z]
         r=np.sqrt((X**2)+(Y**2)+(Z**2))
 
@@ -255,7 +255,7 @@ class System:
 
         """
         if self.sys_flag:
-            if self.sys_flag not in ['circ_test','vkick_test']:
+            if self.sys_flag not in ['circ_test','vkick_test','radial_iso','radial_x','radial_simple']:
                 raise ValueError("Unspecified flag '%s'" % self.sys_flag)
 
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
@@ -273,14 +273,17 @@ class System:
         vphi = np.random.uniform(0,2*np.pi) #
         vcosth = np.random.uniform(-1,1)    # Choose random direction for system velocity
         vsinth = np.sqrt(1-(vcosth**2))    # equivalent to choosing random orientation preSN
-        vsys = np.array([V_sys*vsinth*np.cos(vphi),V_sys*vsinth*np.sin(vphi),V_sys*vcosth])
-        self.vsys=vsys
-        self.vphi=vphi
-        self.vcosth=vcosth
-        self.vsinth=vsinth
         Vtot = self.getVcirc(X0,Y0,Z0)
+        
+
+        
 
         if self.sys_flag=='vkick_test': Vtot = 0 #For checking that initial conditions correspond to circular galactic orbits
+        if self.sys_flag=='radial_iso':
+            Vtot = 0
+            vphi, vcosth, vsinth =  galphi,galcosth,galsinth
+
+        vsys = np.array([V_sys*vsinth*np.cos(vphi),V_sys*vsinth*np.sin(vphi),V_sys*vcosth])
 
         vpx = Vtot * np.sin(galth-(np.pi/2))*np.cos(galphi)
         vpy = Vtot * np.sin(galth-(np.pi/2))*np.sin(galphi)
@@ -291,11 +294,25 @@ class System:
 
         #Rotate by omega while keeping perpendicular to R
         Vp_rot = (Vp*np.cos(omega)) + (np.cross(k,Vp)*np.sin(omega))
+        Vx0,Vy0,Vz0 = Vp_rot + vsys
+        if self.sys_flag =='radial_x':
+            Vtot = 0
+            Vp_rot = np.array([0,0,0])
+            self.X0,self.Y0,self.Z0 = self.R,0.,0.
+            Vx0,Vy0,Vz0 = V_sys,0.,0.
+            self.galphi,self.galcosth = 0.,0.
+            
+            
+            
         self.Vxcirc0, self.Vycirc0, self.Vzcirc0 = Vp_rot
         self.Vtot = Vtot
 
         #Add velocity imparted by SN
-        self.Vx0, self.Vy0, self.Vz0 = Vp_rot + vsys
+        self.Vx0, self.Vy0, self.Vz0 = Vx0,Vy0,Vz0
+        self.vsys=vsys
+        self.vphi=vphi
+        self.vcosth=vcosth
+        self.vsinth=vsinth
 
     def setTmerge(self, Tmin=0.0, Tmax=10.0): #NOTE we should check that this matches up with Maggiori equations
         """ 
@@ -443,6 +460,16 @@ class System:
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
+        if self.sys_flag == 'radial_simple':
+            self.vphi = np.nan
+            self.vcosth = np.nan
+            self.Rmerge = np.nan
+            self.Rmerge_proj = np.nan
+            self.Vfinal = np.nan
+            self.Apost = np.nan
+            self.epost = np.nan
+            self.R_proj=np.nan
+            self.omega=np.nan
 
         data = [self.M2*u.kg.to(u.M_sun), self.Mns*u.kg.to(u.M_sun), self.Mhe*u.kg.to(u.M_sun), \
                 self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, self.d*u.m.to(u.Mpc), \

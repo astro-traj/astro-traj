@@ -80,7 +80,7 @@ class Plot:
         self.suptitle = suptitle
         self.Ubulge = gal.Ubulge
         self.Uhalo = gal.Uhalo
-
+        self.offset = Galaxy['offset']
         if flatten:
             scale = 5.0
             from scipy.integrate import quad
@@ -100,7 +100,15 @@ class Plot:
             self.col = col
             return
 
-
+    def cutArb(self,cutVar,vmin=None,vmax=None):
+        return np.where((cutVar>vmin)&(cutVar<vmax))[0]
+    def getCutLabel(self,cutVarLabel,cutVarUnits,vmin,vmax):
+        if vmin and vmax:
+            return str(vmin)+' '+cutVarUnits+' < ' + cutVarLabel + ' < ' + str(vmax)+ ' '+cutVarUnits
+        elif vmin:
+            return cutVarLabel +  ' > ' + str(vmin) + ' ' + cutVarUnits
+        else:
+            return cutVarLabel + '< ' + str(vmax) + ' ' + cutVarUnits
     def cutTmerge(self,Tmerge,tmin,tmax = None):
         #tmin, tmax in Gyr
         
@@ -143,7 +151,66 @@ class Plot:
         mean = str(np.round(np.mean(x),1))
         med = str(np.round(np.median(x),1))
         return xlabel + '\nMean: '+mean+' Median: '+med
+ 
+    def Big1DArb(self, filename, subject, cutVar, xlabel, cutVarLabel,cutVarUnits, fit = None, vmin = None, vmax=None, maxCut = None,SN=False,nbins=None):
+        from matplotlib import rcParams, ticker
+        rcParams.update({'font.size': 18})
+        fig = plt.figure(figsize = (40,20))
+        if max(len(vmin),len(vmax))>2: shape = (3,2)
+        else: shape = (3,1)
+        axes = [fig.add_subplot(shape[0],shape[1],k) for k in range(1,max(len(vmin),len(vmax))+2)]
+
+        flag = self.data['flag'].values
+        if maxCut:
+            ImaxCut = np.where(subject<maxCut)[0]
+            subject = subject[ImaxCut]
+            cutVar = cutVar[ImaxCut]
+            flag = flag[ImaxCut]
+        if not (fit is None):
+            #fit[0]=fit[0][np.where(fit<maxCut)[0]]
+            #fit[1]=fit[1][np.where(fit<maxCut)[0]]
+            print 'hi'
+            ctemp =np.trapz(fit[1],x=fit[0])
+            print ctemp
+            Constant=1.0#/ctemp
+
+        Ihubble=np.where(flag!=2)[0]
+        Iwin = np.where(flag == 1)[0]
+        Icuttemp = [np.intersect1d(Iwin,self.cutArb(cutVar,vmin[k],vmax[k])) for k in range(max(len(vmin),len(vmax)))]
+        Icut = [Iwin]
+        Icut.extend(Icuttemp)
         
+
+        if not nbins: nbins =int(np.sqrt(np.min([len(I) for I in Icut])))
+        xlabelstemp = [self.getxlabel(subject[Icut[k]],xlabel) for k in range(len(Icut))]
+        xlabels=[xlabel]
+        xlabels.extend(xlabelstemp)
+
+        titlestemp = [self.getCutLabel(cutVarLabel,cutVarUnits,vmin[k],vmax[k]) for k in range(max(len(vmin),len(vmax)))]
+        titles=['All Systems']
+        titles.extend(titlestemp)
+        for k,ax in enumerate(axes):
+            ax.set_xlabel(xlabels[k])
+            ax.set_ylabel('PDF')
+            if SN:
+                
+                ax.hist(subject[Ihubble],bins=nbins,normed=True,color='.7',label='SN Survivors that merge within a Hubble Time')
+            if not fit is None:
+                ax.plot(fit[0],Constant*fit[1],color='g',label='Input Distribution')
+            ax.hist(subject[Icut[k]],bins = nbins,normed = True,color='r',label='Systems matching Offset and ' + cutVarLabel+' Constraints')
+            ax.set_title(titles[k])
+            if k == 3:
+                ax.legend(loc=0)
+        fig.suptitle(self.suptitle)
+        fig.savefig(filename)
+            
+        
+        
+       
+
+        
+    
+
     def BigRLO1D(self, filename, subject, xlabel,  TFLAG = [1,9], TWINDOW=[[1.9,2.1],[4.9,5.1],[7.9,8.1]],maxCut=None):
         from matplotlib import rcParams,ticker
         from functools import reduce
@@ -209,6 +276,7 @@ class Plot:
         axw1.set_xlabel(xlabel)
         axw2.set_xlabel(xlabel)
         if xlabel == '$R_{birth}$ in kpc':
+            
             xx = np.linspace(0,max(subject),1000)
             Rpdf=self.Rpdf.pdf
             Constant = 1.0/self.Rpdf.cdf(10000000000000000000)

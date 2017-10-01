@@ -139,7 +139,15 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
     R_dist = samp.sample_R(PDF, Nsys)
     # (kpc)
-
+    if args.sys_flag=='radial_simple':
+        print 'hi'
+        R_dist = np.linspace(0,2.2,int(np.sqrt(Nsys)))
+        Vkick_dist=np.linspace(0,1000,int(np.sqrt(Nsys)))
+        RV=np.array([[rr,vv] for rr in R_dist for vv in Vkick_dist]).tranpose()
+        R_dist=RV[0]
+        Vkick_dist=RV[1]
+        
+        
     
     print "\nStarting the evolution of sampled binaries!"
     for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist, epre_dist, Mhe_dist, Vkick_dist):
@@ -152,6 +160,23 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         # initialize System class with pertinent parameters
         T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)
         # implement a SN kick to the system, and check to see if binary is disrupted
+        if T.sys_flag=='radial_simple':
+            T.X0.T.Y0,T.Z0=T.R,0.,0.
+            T.Vx0,T.Vy0,T.Vz0 = T.Vkick,0.,0.
+            T.Tmerge = 2.5*u.Gyr.to(u.s)
+            T.doMotion()
+            for i in range(len(T.X)):
+                if T.X[i]>2.2*u.kpc.value:
+                    T.Tmerge = T.t[i]
+                    break
+            outdata = T.write_data()
+            f = open(args.outfile+'.dat', 'a')
+            f.write(str(outdata)[1:-1]+'\n')
+            f.close()
+            continue
+                
+            
+            
         T.SN()
         # if binary is disrupted, move on to next system
         if T.flag == 3:

@@ -65,7 +65,7 @@ def parse_commandline():
     parser.add_argument('--epre', type=str, default='circularized', help="Specify sampling procedure for initial eccentricity. Default=circularized")
     parser.add_argument('--distance', type=str, default='median', help="Specify sampling procedure for the distance. Default=median")
 
-    parser.add_argument('--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick. Default=delta_function")
+    parser.add_argument('--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick; 'animate' for saving trajectory of successful binaries for visualization purposes. Default=None")
     args = parser.parse_args()
 
     return args
@@ -189,6 +189,41 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         f = open(args.outfile+'.dat', 'a')
         f.write(str(outdata)[1:-1]+'\n')
         f.close()
+
+
+        # if animate flag is specified, save binary's trajectory & initial conditions separately for visualization purposes
+        if (args.sys_flag=='animate' and T.flag==1):
+            # plot pre-SN circular orbit
+            init = [-1*T.Vxcirc0,-1*T.Vycirc0,-1*T.Vzcirc0,T.X0,T.Y0,T.Z0]
+            Rmag = np.linalg.norm(init[3:])
+            Vmag = np.linalg.norm(init[:3])
+            Torb = 2*np.pi*Rmag/Vmag
+
+            sol = []
+            def solout(t,y):
+                temp=list(y)
+                temp.append(t)
+                sol.append(temp)
+
+            solver=ode(T.gal.Vdot).set_integrator('dopri5', nsteps=1e13, max_step=u.year.to(u.s)*1e6, rtol=1e-11)
+            solver.set_solout(solout)
+            solver.set_initial_value(init,0)
+            solver.integrate(Torb)
+            sol=np.array(sol)
+            sol=sol[::-1]   # reverse array
+            sol=sol[:-1]    # remove last item at t=0 (double counted)
+
+            # create new df with the pertinent info
+            before = np.transpose([-1*sol[:,6],sol[:,3],sol[:,4],sol[:,5],sol[:,0],sol[:,1],sol[:,2]])
+            after = np.transpose([T.t,T.X,T.Y,T.Z,T.Vx,T.Vy,T.Vz])
+            df_all = pd.DataFrame(np.vstack([before,after]), columns=['t','x','y','z','vx','vy','vz'])
+            
+            # save trajectory and associated initial conditions
+            df_all.to_csv(str(int(T.Vkick/1000))+'_'+str(int(T.R*u.m.to(u.pc)))+'.dat', sep=',', index=False)
+            df.to_csv(str(int(T.Vkick/1000))+'_'+str(int(T.R*u.m.to(u.pc)))+'_ini.dat', sep=',', index=False)
+            f = open(str(int(T.Vkick/1000))+'_'+str(int(T.R*u.m.to(u.pc)))+'_ini.dat', 'a')
+            f.write(str(outdata)[1:-1]+'\n')
+            f.close()
 
 
 

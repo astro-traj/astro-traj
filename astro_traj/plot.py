@@ -37,7 +37,7 @@ __author__ = 'Michael Zevin <michael.zevin@ligo.org>'
 __all__ = ['Plotting']
 
 class Plot:
-    def __init__(self, samples, galaxy_name, offset, r_eff, telescope,suptitle, output=None, flatten=False):
+    def __init__(self, samples, galaxy_name, offset, r_eff, telescope, suptitle, output=None, flatten=False):
         '''
         initialize with values passed to gal and output file. outfile must be a string.
         '''
@@ -897,7 +897,7 @@ class Plot:
 
         ax_gal.legend(loc='upper right')
         plt.tight_layout()
-        plt.savefig('traj_'+num+'.png', dpi=300)
+        plt.savefig('traj_'+num+'.pdf', dpi=500)
 
 
     def trajectory_3d(self, traj_file):

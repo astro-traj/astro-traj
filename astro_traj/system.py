@@ -255,7 +255,8 @@ class System:
 
         """
         if self.sys_flag:
-            if self.sys_flag not in ['circ_test','vkick_test','radial_iso','radial_x','radial_simple','tangential']:
+            if self.sys_flag not in ['circ_test','vkick_test','animate','radial_iso','radial_x','radial_simple','tangential']:
+
                 raise ValueError("Unspecified flag '%s'" % self.sys_flag)
 
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
@@ -317,7 +318,7 @@ class System:
         self.vcosth=vcosth
         self.vsinth=vsinth
 
-    def setTmerge(self, Tmin=0.0, Tmax=10.0): #NOTE we should check that this matches up with Maggiori equations
+    def setTmerge(self, Tmin=0.0, Tmax=14.0): #NOTE we should check that this matches up with Maggiori equations
         """ 
         Calculate the inspiral time for the binary after the supernova using formulae from Peters 1964
         """

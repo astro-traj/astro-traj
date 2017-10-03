@@ -51,14 +51,15 @@ class Plot:
         h = 0.73
         # Info from "GW"
         GW = constr_dict.GW(samples)
+        self.d = GW['d']
+        
         # Info about the galaxy
         Galaxy = constr_dict.galaxy(galaxy_name, samples, r_eff, offset, h)
-        Galaxy['d']=self.d
         # Infer about the telescope that made the measurements (for angular resolution)
         tele = constr_dict.telescope(telescope)
         # Calculate angular resolution of the telescope, convert to physical size at the distance of the kilonova
         theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
-        D_theta = Galaxy['d']*np.tan(theta)                # units of Mpc
+        D_theta = self.d*np.tan(theta)                # units of Mpc
         Galaxy['offset_uncer'] = D_theta*1000.0            # offset uncertainty due to angular resolution of telescope (kpc)
         # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
         gal=galaxy.Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], h, rcut=100)
@@ -900,7 +901,7 @@ class Plot:
     def trajectory(self, traj_file):
         df = pd.read_csv(traj_file+'.dat')
         dfi = pd.read_csv(traj_file+'_ini.dat')
-        num = traj_file[10:]
+        num = traj_file[:]
 
         # setup axes
         fig = plt.figure()
@@ -919,53 +920,41 @@ class Plot:
 
         ax_gal.scatter(xx, yy, c=col_norm, cmap='Greys', label=None, zorder=1)
 
-
+        preSN = df[df['t']<0]
+        postSN = df[df['t']>=0]
         # plot pre-SN circular orbit
-        from scipy.integrate import ode
-        Ri = np.sqrt(df.iloc[0]['x']**2+df.iloc[0]['y']**2+df.iloc[0]['z']**2)
-        Vi = np.sqrt(dfi.iloc[0]['vx']**2+dfi.iloc[0]['vy']**2+dfi.iloc[0]['vz']**2)
-        Torb = 2*np.pi*Ri/Vi
-        solver=ode(self.gal.Vdot).set_integrator('dopri5', nsteps=1e13, max_step=u.year.to(u.s)*1e6, rtol=1e-11)
-        sol = []
-        def solout(t,y):
-            temp=list(y)
-            temp.append(t)
-            sol.append(temp)
-        RR = np.array([dfi.iloc[0]['vx'],dfi.iloc[0]['vy'],dfi.iloc[0]['vz'],df.iloc[0]['x'],df.iloc[0]['y'],df.iloc[0]['z']])
-        solver.set_solout(solout)
-        solver.set_initial_value(RR,0)
-        solver.integrate(Torb)
-        sol=np.array(sol)
-        
-        ax_gal.plot(sol[:,3]*u.m.to(u.kpc), sol[:,4]*u.m.to(u.kpc), color='g', label='$Initial\ Orbit$', zorder=3, alpha=0.7)
+        ax_gal.plot(preSN['x']*u.m.to(u.kpc), preSN['y']*u.m.to(u.kpc), color='w', label='$Initial\ Orbit$', zorder=3, alpha=0.7)
 
         # plot the trajectory of the binary through the galaxy, colored by age
-        age_col = df['t']*u.s.to(u.Gyr)
-        pts = ax_gal.scatter(df['x']*u.m.to(u.kpc), df['y']*u.m.to(u.kpc), c=age_col, cmap='viridis', s=0.5, zorder=2, label=None, alpha=0.5)
+        age_col = postSN['t']*u.s.to(u.Gyr)
+        pts = ax_gal.scatter(postSN['x']*u.m.to(u.kpc), postSN['y']*u.m.to(u.kpc), c=age_col, cmap='viridis', s=0.5, vmin=0, vmax=np.floor(100*age_col.max())/100.0, zorder=2, label=None, alpha=0.5)
 
         # plot location of supernova and kilonova
-        ax_gal.scatter(df.iloc[0]['x']*u.m.to(u.kpc), df.iloc[0]['y']*u.m.to(u.kpc), marker='*', color='r', s=50, label='$2^{nd}\ Supernova$', zorder=4)
-        ax_gal.scatter(df.iloc[-1]['x']*u.m.to(u.kpc), df.iloc[-1]['y']*u.m.to(u.kpc), marker='*', color='y', s=100, label='$BNS\ Merger$', zorder=4)
-        xdir = (df.iloc[0]['vx']-dfi.iloc[0]['vx'])/1e5
-        ydir = (df.iloc[0]['vy']-dfi.iloc[0]['vy'])/1e5
-        ax_gal.arrow(df.iloc[0]['x']*u.m.to(u.kpc), df.iloc[0]['y']*u.m.to(u.kpc), dx=xdir, dy=ydir, color='r', width=0.02, head_width=0.1, zorder=4)
+        ax_gal.scatter(postSN.iloc[0]['x']*u.m.to(u.kpc), postSN.iloc[0]['y']*u.m.to(u.kpc), marker='*', color='r', s=50, label='$2^{nd}\ Supernova$', zorder=4)
+        ax_gal.scatter(postSN.iloc[-1]['x']*u.m.to(u.kpc), postSN.iloc[-1]['y']*u.m.to(u.kpc), marker='*', color='y', s=100, label='$BNS\ Merger$', zorder=4)
+        xdir = (postSN.iloc[0]['vx']-preSN.iloc[-1]['vx'])/1e5
+        ydir = (postSN.iloc[0]['vy']-preSN.iloc[-1]['vy'])/1e5
+        ax_gal.arrow(postSN.iloc[0]['x']*u.m.to(u.kpc), postSN.iloc[0]['y']*u.m.to(u.kpc), dx=xdir, dy=ydir, color='r', width=0.02, head_width=0.1, zorder=4)
+        ax_gal.scatter([0],[0], marker='x', color='r', s=30, zorder=4)  # plot galactic center
+
 
         # add colorbar
-        cbar = fig.colorbar(pts, ticks=[age_col.min(), age_col.max()], cax=ax_cbar, orientation='vertical')
+        cbar = fig.colorbar(pts, ticks=[0, np.floor(100*age_col.max())/100.0], cax=ax_cbar, orientation='vertical')
 
         # label & format
         ax_gal.set_xlim(-1*scale,scale)
         ax_gal.set_ylim(-1*scale,scale)
-        ax_gal.set_xlabel(r'$kpc$')
-        ax_gal.set_ylabel(r'$kpc$')
-        cbar.set_label(r'$Gyr$')
+        ax_gal.set_xlabel(r'$x\ (kpc)$')
+        ax_gal.set_ylabel(r'$y\ (kpc)$')
+        cbar.set_label(r'$Gyr$', labelpad=-20)
 
         # annotate with apre, vkick, mhe
-        ax_gal.annotate('$V_{kick} = %.1f\ km/s$\n$M_{He} = %.1f\ M_{\odot}$\n$a_{pre} = %.1f\ R_{\odot}$' % (dfi.iloc[0]['Vkick']*u.m.to(u.km),dfi.iloc[0]['Mhe']*u.kg.to(u.Msun),dfi.iloc[0]['Apre']*u.m.to(u.Rsun)), xy=(-4.8,3.5))
+        ax_gal.annotate('$V_{kick} = %.1f\ km/s$\n$M_{He} = %.1f\ M_{\odot}$\n$A_{pre} = %.1f\ R_{\odot}$' % (dfi.iloc[0]['Vkick'],dfi.iloc[0]['Mhe'],dfi.iloc[0]['Apre']), xy=(-4.8,3.5))
 
-        ax_gal.legend(loc='upper right')
+        handles, labels = ax_gal.get_legend_handles_labels()
+        ax_gal.legend(reversed(handles), reversed(labels), loc='upper right', frameon=False)
         plt.tight_layout()
-        plt.savefig('traj_'+num+'.pdf', dpi=500)
+        plt.savefig('traj/'+num+'.pdf', dpi=200)
 
 
     def trajectory_3d(self, traj_file):
@@ -1133,3 +1122,85 @@ class Plot:
             t_ctr += stepsize
             print "...done with %i" % i
 
+
+
+    def trajectory_panel(self, traj_files):
+        
+        # setup axes
+        fig = plt.figure(figsize=(13,8))
+        gs = gridspec.GridSpec(8,13)
+        ax1 = fig.add_subplot(gs[:4,:4])
+        ax2 = fig.add_subplot(gs[:4,4:8])
+        ax3 = fig.add_subplot(gs[:4,8:12])
+        ax4 = fig.add_subplot(gs[4:,:4])
+        ax5 = fig.add_subplot(gs[4:,4:8])
+        ax6 = fig.add_subplot(gs[4:,8:12])
+        axs = [ax1, ax2, ax3, ax4, ax5, ax6]
+        ax_cbar = fig.add_subplot(gs[:,-1])
+        vbounds = [0.0,3.0]
+
+        for i, traj_file in enumerate(traj_files):
+            df = pd.read_csv(traj_file+'.dat')
+            dfi = pd.read_csv(traj_file+'_ini.dat')
+            ax = axs[i]
+
+            # plot stellar background
+            def norm(x):
+                return (x-x.min())/(x.max()-x.min())
+            col_norm = norm(self.col)
+            scale = 5.0
+            x = np.linspace(-1*scale, scale, 100)
+            y = np.linspace(-1*scale, scale, 100)
+            xx, yy = np.meshgrid(x,y)
+
+            ax.scatter(xx, yy, c=col_norm, cmap='Greys', label=None, zorder=1)
+
+            preSN = df[df['t']<0]
+            postSN = df[df['t']>=0]
+            # plot pre-SN circular orbit
+            ax.plot(preSN['x']*u.m.to(u.kpc), preSN['y']*u.m.to(u.kpc), color='w', label='$Initial\ Orbit$', zorder=3, alpha=0.7)
+
+            # plot the trajectory of the binary through the galaxy, colored by age
+            age_col = postSN['t']*u.s.to(u.Gyr)
+            pts = ax.scatter(postSN['x']*u.m.to(u.kpc), postSN['y']*u.m.to(u.kpc), c=age_col, cmap='viridis', s=0.5, vmin=vbounds[0], vmax=vbounds[1], zorder=2, label=None, alpha=0.5)
+
+            # plot location of supernova and kilonova
+            ax.scatter(postSN.iloc[0]['x']*u.m.to(u.kpc), postSN.iloc[0]['y']*u.m.to(u.kpc), marker='*', color='r', s=50, label='$2^{nd}\ Supernova$', zorder=4)
+            ax.scatter(postSN.iloc[-1]['x']*u.m.to(u.kpc), postSN.iloc[-1]['y']*u.m.to(u.kpc), marker='*', color='y', s=100, label='$BNS\ Merger$', zorder=4)
+            xdir = (postSN.iloc[0]['vx']-preSN.iloc[-1]['vx'])/1e5
+            ydir = (postSN.iloc[0]['vy']-preSN.iloc[-1]['vy'])/1e5
+            ax.arrow(postSN.iloc[0]['x']*u.m.to(u.kpc), postSN.iloc[0]['y']*u.m.to(u.kpc), dx=xdir, dy=ydir, color='r', width=0.02, head_width=0.1, zorder=4)
+            ax.scatter([0],[0], marker='x', color='r', s=30, zorder=4)  # plot galactic center
+
+            # label & format
+            if i>=3:
+                ax.set_xlabel(r'$x\ (kpc)$', fontsize=25)
+                ax.set_xticks([-4,-2,0,2,4])
+                ax.tick_params(labelsize=20)
+            else:
+                ax.xaxis.set_ticklabels([])
+            if i==0 or i==3:
+                ax.set_ylabel(r'$y\ (kpc)$', fontsize=25)
+                ax.set_yticks([-4,-2,0,2,4])
+                ax.tick_params(labelsize=20)
+            else:
+                ax.yaxis.set_ticklabels([])
+            ax.set_xlim(-1*scale,scale)
+            ax.set_ylim(-1*scale,scale)
+
+            # annotate with apre, vkick, mhe
+            ax.annotate('$V_{kick} = %.1f\ km/s$\n$M_{He} = %.1f\ M_{\odot}$\n$A_{pre} = %.1f\ R_{\odot}$' % (dfi.iloc[0]['Vkick'],dfi.iloc[0]['Mhe'],dfi.iloc[0]['Apre']), xy=(-4.5,2.8), fontsize=14)
+
+            if i == len(axs)-1:
+                ax.legend(loc='lower right', frameon=False, prop={'size': 12})
+
+        # add colorbar
+        pts = ax_cbar.scatter([-1],[-1],c=[0], vmin=vbounds[0], vmax=vbounds[1], cmap='viridis', alpha=1.0)
+        cbar = fig.colorbar(pts, cax=ax_cbar, ticks=[0.0,3.0], orientation='vertical')    
+        cbar.ax.tick_params(labelsize=20)
+        cbar.set_label(r'$Gyr$', labelpad=-10, fontsize=25)
+        ax_cbar.set_xlim(0,1)
+        ax_cbar.set_ylim(0,1)
+
+        plt.tight_layout(h_pad=0.1, w_pad=0.1)
+        plt.savefig('multipanel_traj.pdf', dpi=250)

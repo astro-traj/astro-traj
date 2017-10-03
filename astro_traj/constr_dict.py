@@ -32,10 +32,11 @@ def GW(filename_samples):
 
     GW = {}
     samples_out = Table.read(filename_samples, format='ascii')
-    GW['m1'] = np.mean(samples_out['m1'])
-    GW['m2'] = np.mean(samples_out['m2'])
-    GW['m1_sigma'] = np.std(samples_out['m1'])
-    GW['m2_sigma'] = np.std(samples_out['m2'])
+    GW['m1'] = np.median(samples_out['m1_source'])
+    GW['m2'] = np.median(samples_out['m2_source'])
+    GW['m1_sigma'] = np.std(samples_out['m1_source'])
+    GW['m2_sigma'] = np.std(samples_out['m2_source'])
+    GW['d'] = np.median(samples_out['distance'])
 
     return GW
 

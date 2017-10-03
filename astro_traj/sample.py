@@ -23,9 +23,9 @@ import numpy as np
 import astropy.units as u
 import astropy.constants as C
 from scipy.stats import maxwell
+from scipy.integrate import trapz
 from scipy.stats import rv_continuous
 from astropy.table import Table
-
 __author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
 __credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 __all__ = ['Sample', 'Hernquist_pdf']
@@ -172,6 +172,20 @@ class Sample:
         '''
         samples He-star mass uniformly between Mns and 8 Msun (BH limit)
         '''
+        if method=='power':
+            Mmin=2.
+            def pdf(m):
+                return m**-2.3
+            xx=np.linspace(Mmin,Mmax,1000)
+            A1=trapz(pdf(xx),x=xx)
+            Anorm=1./A1
+            def invpdf(ii):
+                return (1./((Mmin**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
+            II=np.random.uniform(0,1,size=size)
+            return invpdf(II)
+
+            
+
         if method=='uniform':
             Mhe_samp = np.random.uniform(Mmin, Mmax, size=size)
             return Mhe_samp

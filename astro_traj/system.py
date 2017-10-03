@@ -255,7 +255,7 @@ class System:
 
         """
         if self.sys_flag:
-            if self.sys_flag not in ['circ_test','vkick_test','radial_iso','radial_x','radial_simple']:
+            if self.sys_flag not in ['circ_test','vkick_test','radial_iso','radial_x','radial_simple','tangential']:
                 raise ValueError("Unspecified flag '%s'" % self.sys_flag)
 
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
@@ -294,6 +294,9 @@ class System:
 
         #Rotate by omega while keeping perpendicular to R
         Vp_rot = (Vp*np.cos(omega)) + (np.cross(k,Vp)*np.sin(omega))
+        Vp_rot_tot = np.sqrt((Vp[0]**2)+(Vp[1]**2)+(Vp[2]**2))
+        if self.sys_flag == 'tangential':
+            vsys = [V_sys*Vp_rot[0]/Vp_rot_tot,V_sys*Vp_rot[1]/Vp_rot_tot,V_sys*Vp_rot[2]/Vp_rot_tot]
         Vx0,Vy0,Vz0 = Vp_rot + vsys
         if self.sys_flag =='radial_x':
             Vtot = 0
@@ -463,7 +466,6 @@ class System:
         if self.sys_flag == 'radial_simple':
             self.vphi = np.nan
             self.vcosth = np.nan
-            self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
             self.Apost = np.nan

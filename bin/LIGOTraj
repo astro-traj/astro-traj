@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/software/anaconda2/bin/python
 
 # ---- Import standard modules to the python path.
 import argparse
@@ -30,6 +30,7 @@ from astro_traj.galaxy import Hernquist_NFW
 from astro_traj import constr_dict
 from astro_traj.sample import Sample
 from astro_traj.plot import Plot
+import pdb
 
 
 def parse_commandline():
@@ -139,11 +140,11 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
     R_dist = samp.sample_R(PDF, Nsys)
     # (kpc)
-    if args.sys_flag=='radial_simple':
-        print 'hi'
-        R_dist = np.linspace(0,2.2,int(np.sqrt(Nsys)))
-        Vkick_dist=np.linspace(0,1000,int(np.sqrt(Nsys)))
-        RV=np.array([[rr,vv] for rr in R_dist for vv in Vkick_dist]).tranpose()
+    if args.sys_flag=='radial_simple' or args.sys_flag=='tangential':
+        
+        R_dist = np.linspace(0.001,Galaxy['offset'],10)
+        Vkick_dist=np.linspace(0,1000,100)
+        RV=np.array([[rr,vv] for rr in R_dist for vv in Vkick_dist]).transpose()
         R_dist=RV[0]
         Vkick_dist=RV[1]
         
@@ -160,19 +161,42 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         # initialize System class with pertinent parameters
         T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)
         # implement a SN kick to the system, and check to see if binary is disrupted
-        if T.sys_flag=='radial_simple':
-            T.X0.T.Y0,T.Z0=T.R,0.,0.
-            T.Vx0,T.Vy0,T.Vz0 = T.Vkick,0.,0.
+        if T.sys_flag=='tangential':
+            T.flag=9
+            T.V_sys = T.Vkick
+            T.setXYZ_0()
+            T.setVxyz_0()
+
             T.Tmerge = 2.5*u.Gyr.to(u.s)
             T.doMotion()
             for i in range(len(T.X)):
-                if T.X[i]>2.2*u.kpc.value:
+                TrueOffset = np.sqrt((T.X[i]**2)+(T.Y[i]**2)+(T.Z[i]**2))
+                if TrueOffset > Galaxy['offset']*u.kpc.to(u.m):
                     T.Tmerge = T.t[i]
+                    T.Rmerge = T.X[i]
+                    f = open(args.outfile+'.dat', 'a')
+                    f.write(str(outdata)[1:-1]+'\n')
+                    f.close()
                     break
-            outdata = T.write_data()
-            f = open(args.outfile+'.dat', 'a')
-            f.write(str(outdata)[1:-1]+'\n')
-            f.close()
+            continue
+
+        if T.sys_flag=='radial_simple':
+            T.flag=9
+            T.X0,T.Y0,T.Z0=T.R,0.,0.
+            T.Vx0,T.Vy0,T.Vz0 = T.Vkick,0.,0.
+            
+            T.Tmerge = 2.5*u.Gyr.to(u.s)
+            T.doMotion()
+            for i in range(len(T.X)):
+                if T.X[i]>Galaxy['offset']*u.kpc.to(u.m):
+                    T.Tmerge = T.t[i]
+                    T.Rmerge = T.X[i]
+                    outdata = T.write_data()
+                    f = open(args.outfile+'.dat', 'a')
+                    f.write(str(outdata)[1:-1]+'\n')
+                    f.close()
+                    break
+                    
             continue
                 
             

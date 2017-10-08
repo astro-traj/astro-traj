@@ -1189,7 +1189,8 @@ class Plot:
             ax.set_ylim(-1*scale,scale)
 
             # annotate with apre, vkick, mhe
-            ax.annotate('$V_{kick} = %.1f\ km/s$\n$M_{He} = %.1f\ M_{\odot}$\n$A_{pre} = %.1f\ R_{\odot}$' % (dfi.iloc[0]['Vkick'],dfi.iloc[0]['Mhe'],dfi.iloc[0]['Apre']), xy=(-4.5,2.8), fontsize=14)
+            ax.annotate('$V_{kick} = %.1f\ km/s$\n$M_{He} = %.1f\ M_{\odot}$\n$A_{pre} = %.1f\ R_{\odot}$' % (dfi.iloc[0]['Vkick'],dfi.iloc[0]['Mhe'],dfi.iloc[0]['Apre']), xy=(-4.5,2.8), fontsize=12)
+            ax.annotate('$T_{delay} = %.2f\ Gyr$' % (dfi.iloc[0]['Tmerge']), xy=(-4.5,-4.5), fontsize=12)
 
             if i == len(axs)-1:
                 ax.legend(loc='lower right', frameon=False, prop={'size': 12})

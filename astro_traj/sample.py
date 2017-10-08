@@ -222,9 +222,8 @@ class Sample:
         
                 
         if method=='power':
-            Mmin=2.
             def pdf(m):
-                return m**-2.3
+                return m**-2.35
             xx=np.linspace(Mmin,Mmax,1000)
             A1=trapz(pdf(xx),x=xx)
             Anorm=1./A1

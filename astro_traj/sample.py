@@ -57,7 +57,43 @@ class Hernquist_pdf(rv_continuous):
         Cnorm = normFac(self.rcut/self.abulge)            # NOTE: rcut needs to be in terms of abulge for normalization
         return 2 * Cnorm*r * self.abulge * (self.abulge + r)**(-3)
 
+class BeniaminiKick_pdf(rv_continuous):
+    '''
+    vkick pdf from Beniamini
+    '''
+    def __init__(self,Vk0,sigvk = np.arcsinh(.5),momtype=1, a=None, b=None, xtol=1e-14,
+                 badvalue=None, name=None, longname=None,
+                 shapes=None, extradoc=None, seed=None):
+        
+        rv_continuous.__init__(self, momtype, a, b, xtol,
+                 badvalue, name, longname,
+                 shapes, extradoc, seed)
+        self.Vk0 = Vk0
+        self.sigvk = sigvk
 
+    def _pdf(self,Vk):
+            term1 = 1/(np.sqrt(2.0*np.pi)*self.sigvk*Vk)
+            term2 = np.exp(-(np.log(Vk/self.Vk0)**2)/(2.0*(self.sigvk**2)))
+            return term1*term2
+        
+class BeniaminiMhe_pdf(rv_continuous):
+    '''
+    vkick pdf from Beniamini
+    '''
+    def __init__(self,dM0,sigdM = np.arcsinh(.5),momtype=1, a=None, b=None, xtol=1e-14,
+                 badvalue=None, name=None, longname=None,
+                 shapes=None, extradoc=None, seed=None):
+        
+        rv_continuous.__init__(self, momtype, a, b, xtol,
+                 badvalue, name, longname,
+                 shapes, extradoc, seed)
+        self.dM0 = dM0
+        self.sigdM = sigdM
+
+    def _pdf(self,dM):
+            term1 = 1/(np.sqrt(2.0*np.pi)*self.sigdM*dM)
+            term2 = np.exp(-(np.log(dM/self.dM0)**2)/(2.0*(self.sigdM**2)))
+            return term1*term2 
 class Sample:
     def __init__(self, gal):   # default rcut=0 does not truncate the distributions (i.e., they extend to infinity)
         '''
@@ -168,10 +204,23 @@ class Sample:
 
 
     # sample helium star mass
-    def sample_Mhe(self, Mmin, Mmax=8.0, method='uniform', size=None):
+    def sample_Mhe(self, Mmin, Mmax=8.0, method='uniform', size=None,PDF=None,ECSPDF=None,CCSPDF=None):
         '''
         samples He-star mass uniformly between Mns and 8 Msun (BH limit)
         '''
+        if method=='beniamini':
+            dMhe_samp = PDF.rvs(size=size)
+            return dMhe_samp+Mmin
+        if method=='beniamini2':
+            dMhe_samp = []
+            for i in range(size):
+                if np.random.uniform(0,1)<0.6:
+                    dMhe_samp.append(ECSPDF.rvs())
+                else:
+                    dMhe_samp.append(CCSPDF.rvs())
+            return np.array(dMhe_samp)+Mmin
+        
+                
         if method=='power':
             Mmin=2.
             def pdf(m):
@@ -195,10 +244,20 @@ class Sample:
 
 
     # sample kick velocities
-    def sample_Vkick(self, scale=265, Vmin=0, Vmax=2500, method='maxwellian', size=None):
+    def sample_Vkick(self, scale=265, Vmin=0, Vmax=2500, method='maxwellian', size=None,Mhe=None,ECSPDF=None,CCSPDF=None):
         '''
         sample kick velocity from Maxwellian (Hobbs 2005, default) or uniformly (Wong 2010)
         '''
+        if method=='beniamini':
+            Vkick_samp=[]
+            for i in range(len(Mhe)):
+                if Mhe[i]<=2.25:
+                    Vkick_samp.append(ECSPDF.rvs())
+                else:
+                    Vkick_samp.append(CCSPDF.rvs())
+            return np.array(Vkick_samp)
+                    
+            
         if method=='maxwellian':
             Vkick_samp = maxwell.rvs(loc=0, scale=scale, size=size)
             return Vkick_samp
@@ -209,8 +268,12 @@ class Sample:
 
         else: 
             raise ValueError("Undefined sampling method: %s" % method)
-
-
+    def initialize_Mhe(self,dM0):
+        return BeniaminiMhe_pdf(dM0,a=0)
+    def initialize_Vkick(self):
+        ECS = BeniaminiKick_pdf(5.0,a=0)
+        CCS = BeniaminiKick_pdf(158.0,a=0)
+        return ECS,CCS
     def initialize_R(self):
         '''
         samples radial distance from galactic center according to specified potential function

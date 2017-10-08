@@ -126,7 +126,8 @@ class System:
         Vkx = Vkick*sinth*np.sin(phi)
         Vky = Vkick*costh
         Vkz = Vkick*sinth*np.cos(phi)
-
+        if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential':
+            Vkx,Vky,Vkz=0,-Vkick,0
         #Eq 1, Kalogera 1996
         Vr = np.sqrt(G*(Mhe+M2)/Apre)
         Mtot=Mns+M2
@@ -142,7 +143,7 @@ class System:
         V_sys = np.sqrt((VSx**2)+(VSy**2)+(VSz**2))
 
         self.Apost, self.epost, self.VSx, self.VSy, self.VSz, self.V_sys, self.Vr = Apost, epost, VSx, VSy, VSz, V_sys, Vr
-
+        
         def SNCheck(self):
             """
             Paper References:
@@ -255,8 +256,7 @@ class System:
 
         """
         if self.sys_flag:
-            if self.sys_flag not in ['circ_test','vkick_test','animate','radial_iso','radial_x','radial_simple','tangential']:
-
+            if self.sys_flag not in ['circ_test','vkick_test','radial_iso','radial_x','radial_simple','tangential']:
                 raise ValueError("Unspecified flag '%s'" % self.sys_flag)
 
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
@@ -318,7 +318,7 @@ class System:
         self.vcosth=vcosth
         self.vsinth=vsinth
 
-    def setTmerge(self, Tmin=0.0, Tmax=14.0): #NOTE we should check that this matches up with Maggiori equations
+    def setTmerge(self, Tmin=0.0, Tmax=10.0): #NOTE we should check that this matches up with Maggiori equations
         """ 
         Calculate the inspiral time for the binary after the supernova using formulae from Peters 1964
         """
@@ -464,7 +464,7 @@ class System:
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
-        if self.sys_flag == 'radial_simple':
+        if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential':
             self.vphi = np.nan
             self.vcosth = np.nan
             self.Rmerge_proj = np.nan

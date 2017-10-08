@@ -66,7 +66,7 @@ def parse_commandline():
     parser.add_argument('--epre', type=str, default='circularized', help="Specify sampling procedure for initial eccentricity. Default=circularized")
     parser.add_argument('--distance', type=str, default='median', help="Specify sampling procedure for the distance. Default=median")
 
-    parser.add_argument('--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick; 'animate' for saving trajectory of successful binaries for visualization purposes. Default=None")
+    parser.add_argument('--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick. Default=delta_function")
     args = parser.parse_args()
 
     return args
@@ -100,8 +100,6 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
     gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], h, rcut=100)
     samp=Sample(gal)
-    # Initialize R
-    PDF = samp.initialize_R()
 
 
     # Create empty output file
@@ -126,33 +124,43 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     d_dist = samp.sample_distance(samples, method=args.distance, size=Nsys)
     # (Mpc)
 
-    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method=args.Mhe, size=Nsys)
-    # (Msun)
-
+  
     Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method=args.Apre, size=Nsys)
     # (Rsun)
 
     epre_dist = samp.sample_epre(method=args.epre, size=Nsys)
     # (dimensionless)
 
-    Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys)
+    PDFR = samp.initialize_R()
+
+    R_dist = samp.sample_R(PDFR, Nsys)
+    # (kpc)
+    
+    PDFMhe = samp.initialize_Mhe(0.6)
+    ECSPDFMhe = samp.initialize_Mhe(0.1)
+    CCSPDFMhe = samp.initialize_Mhe(1.0)
+
+    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method=args.Mhe, size=Nsys,PDF=PDFMhe,ECSPDF=ECSPDFMhe,CCSPDF=CCSPDFMhe)
+    # (Msun)
+    ECS,CCS = samp.initialize_Vkick()
+
+    Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys,ECSPDF=ECS,CCSPDF=CCS,Mhe=Mhe_dist)
     # (km/s)
 
-    R_dist = samp.sample_R(PDF, Nsys)
-    # (kpc)
-    if args.sys_flag=='radial_simple' or args.sys_flag=='tangential':
+    
+    #if args.sys_flag=='radial_simple' or args.sys_flag=='tangential':
         
-        R_dist = np.linspace(0.001,Galaxy['offset'],10)
-        Vkick_dist=np.linspace(0,1000,100)
-        RV=np.array([[rr,vv] for rr in R_dist for vv in Vkick_dist]).transpose()
-        R_dist=RV[0]
-        Vkick_dist=RV[1]
+     #   R_dist = np.linspace(0.001,Galaxy['offset'],10)
+      #  Vkick_dist=np.linspace(0,1000,100)
+       # RV=np.array([[rr,vv] for rr in R_dist for vv in Vkick_dist]).transpose()
+        #R_dist=RV[0]
+        #Vkick_dist=RV[1]
         
         
     
     print "\nStarting the evolution of sampled binaries!"
     for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist, epre_dist, Mhe_dist, Vkick_dist):
-    
+        
         # Calculate angular resolution of the telescope, convert to physical size at the distance of merger
         theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
         D_theta = d*np.tan(theta)                          # units of Mpc
@@ -162,18 +170,20 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)
         # implement a SN kick to the system, and check to see if binary is disrupted
         if T.sys_flag=='tangential':
-            T.flag=9
-            T.V_sys = T.Vkick
+            if R>Galaxy['offset']:continue
+            T.SN()
+            if T.flag==3:continue
             T.setXYZ_0()
             T.setVxyz_0()
-
-            T.Tmerge = 2.5*u.Gyr.to(u.s)
+            
+            T.Tmerge = 0.1*u.Gyr.to(u.s)
             T.doMotion()
             for i in range(len(T.X)):
                 TrueOffset = np.sqrt((T.X[i]**2)+(T.Y[i]**2)+(T.Z[i]**2))
                 if TrueOffset > Galaxy['offset']*u.kpc.to(u.m):
                     T.Tmerge = T.t[i]
                     T.Rmerge = T.X[i]
+                    outdata = T.write_data()
                     f = open(args.outfile+'.dat', 'a')
                     f.write(str(outdata)[1:-1]+'\n')
                     f.close()
@@ -181,14 +191,17 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
             continue
 
         if T.sys_flag=='radial_simple':
-            T.flag=9
+            if R>Galaxy['offset']:continue
+            T.SN()
+            if T.flag==3:continue
             T.X0,T.Y0,T.Z0=T.R,0.,0.
-            T.Vx0,T.Vy0,T.Vz0 = T.Vkick,0.,0.
-            
-            T.Tmerge = 2.5*u.Gyr.to(u.s)
+            T.Vx0,T.Vy0,T.Vz0 = T.V_sys,0.,0.
+            pdb.set_trace()
+            T.Tmerge = 0.1*u.Gyr.to(u.s)
             T.doMotion()
             for i in range(len(T.X)):
                 if T.X[i]>Galaxy['offset']*u.kpc.to(u.m):
+
                     T.Tmerge = T.t[i]
                     T.Rmerge = T.X[i]
                     outdata = T.write_data()
@@ -238,41 +251,6 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         f = open(args.outfile+'.dat', 'a')
         f.write(str(outdata)[1:-1]+'\n')
         f.close()
-
-
-        # if animate flag is specified, save binary's trajectory & initial conditions separately for visualization purposes
-        if (args.sys_flag=='animate' and T.flag==1):
-            # plot pre-SN circular orbit
-            init = [-1*T.Vxcirc0,-1*T.Vycirc0,-1*T.Vzcirc0,T.X0,T.Y0,T.Z0]
-            Rmag = np.linalg.norm(init[3:])
-            Vmag = np.linalg.norm(init[:3])
-            Torb = 2*np.pi*Rmag/Vmag
-
-            sol = []
-            def solout(t,y):
-                temp=list(y)
-                temp.append(t)
-                sol.append(temp)
-
-            solver=ode(T.gal.Vdot).set_integrator('dopri5', nsteps=1e13, max_step=u.year.to(u.s)*1e6, rtol=1e-11)
-            solver.set_solout(solout)
-            solver.set_initial_value(init,0)
-            solver.integrate(Torb)
-            sol=np.array(sol)
-            sol=sol[::-1]   # reverse array
-            sol=sol[:-1]    # remove last item at t=0 (double counted)
-
-            # create new df with the pertinent info
-            before = np.transpose([-1*sol[:,6],sol[:,3],sol[:,4],sol[:,5],sol[:,0],sol[:,1],sol[:,2]])
-            after = np.transpose([T.t,T.X,T.Y,T.Z,T.Vx,T.Vy,T.Vz])
-            df_all = pd.DataFrame(np.vstack([before,after]), columns=['t','x','y','z','vx','vy','vz'])
-            
-            # save trajectory and associated initial conditions
-            df_all.to_csv(str(int(T.Vkick/1000))+'_'+str(int(T.R*u.m.to(u.pc)))+'.dat', sep=',', index=False)
-            df.to_csv(str(int(T.Vkick/1000))+'_'+str(int(T.R*u.m.to(u.pc)))+'_ini.dat', sep=',', index=False)
-            f = open(str(int(T.Vkick/1000))+'_'+str(int(T.R*u.m.to(u.pc)))+'_ini.dat', 'a')
-            f.write(str(outdata)[1:-1]+'\n')
-            f.close()
 
 
 

@@ -320,7 +320,7 @@ class System:
 
     def setTmerge(self, Tmin=0.0, Tmax=10.0): #NOTE we should check that this matches up with Maggiori equations
         """ 
-        Calculate the inspiral time for the binary after the supernova using formulae from Peters 1964
+        Calculate the inspiral time for the binary after the supernova using formulae from `Peters 1964 <https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224>`_
         """
         m1=self.Mns; m2=self.M2
         G = C.G.value; c = C.c.value

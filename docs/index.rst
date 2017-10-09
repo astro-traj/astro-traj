@@ -17,6 +17,15 @@ The easiest method to install astro_traj is using `pip <https://pip.pypa.io/en/s
    $ pip install git+https://github.com/astro-traj/astro-traj
 
 
+Table of Contents
+-----------------
+
+.. toctree::
+   :maxdepth: 3
+
+   examples/index
+
+
 How to run astro_traj
 ---------------------
 

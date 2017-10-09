@@ -233,7 +233,7 @@ class Sample:
             
             def pdf(m):
                 return m**-2.35
-<<<<<<< HEAD
+
             def invpdf(ii,mmin):
                     return (1./((mmin**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
             for i in range(len(Mmin)):
@@ -245,17 +245,6 @@ class Sample:
                 Mhe_samp.append(invpdf(II,Mmin[i]))
             return np.array(Mhe_samp)
             
-=======
-            xx=np.linspace(Mmin,Mmax,1000)
-            A1=trapz(pdf(xx),x=xx)
-            Anorm=1./A1
-            def invpdf(ii):
-                return (1./((Mmin**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
-            II=np.random.uniform(0,1,size=size)
-            return invpdf(II)
-
->>>>>>> 8625d54c4d79c26101b289740df418da7509ac71
-
         if method=='uniform':
             Mhe_samp = np.random.uniform(Mmin, Mmax, size=size)
             return Mhe_samp

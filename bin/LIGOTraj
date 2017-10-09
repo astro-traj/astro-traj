@@ -139,12 +139,12 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     PDFMhe = samp.initialize_Mhe(0.6)
     ECSPDFMhe = samp.initialize_Mhe(0.1)
     CCSPDFMhe = samp.initialize_Mhe(1.0)
-
-    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method=args.Mhe, size=Nsys,PDF=PDFMhe,ECSPDF=ECSPDFMhe,CCSPDF=CCSPDFMhe)
+    dumrand = np.random.uniform(0,1,size=Nsys)
+    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method=args.Mhe, size=Nsys,PDF=PDFMhe,ECSPDF=ECSPDFMhe,CCSPDF=CCSPDFMhe,irand=dumrand)
     # (Msun)
     ECS,CCS = samp.initialize_Vkick()
 
-    Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys,ECSPDF=ECS,CCSPDF=CCS,Mhe=Mhe_dist)
+    Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys,ECSPDF=ECS,CCSPDF=CCS,Mhe=Mhe_dist,irand=dumrand)
     # (km/s)
 
     

@@ -204,17 +204,18 @@ class Sample:
 
 
     # sample helium star mass
-    def sample_Mhe(self, Mmin, Mmax=8.0, method='uniform', size=None,PDF=None,ECSPDF=None,CCSPDF=None):
+    def sample_Mhe(self, Mmin, Mmax=8.0, method='uniform', size=None,PDF=None,ECSPDF=None,CCSPDF=None,irand=None):
         '''
         samples He-star mass uniformly between Mns and 8 Msun (BH limit)
         '''
+        print method
         if method=='beniamini':
             dMhe_samp = PDF.rvs(size=size)
             return dMhe_samp+Mmin
         if method=='beniamini2':
             dMhe_samp = []
             for i in range(size):
-                if np.random.uniform(0,1)<0.6:
+                if irand[i]<0.6:
                     dMhe_samp.append(ECSPDF.rvs())
                 else:
                     dMhe_samp.append(CCSPDF.rvs())
@@ -222,16 +223,20 @@ class Sample:
         
                 
         if method=='power':
+            Mhe_samp=[]
+            
             def pdf(m):
                 return m**-2.35
-            xx=np.linspace(Mmin,Mmax,1000)
-            A1=trapz(pdf(xx),x=xx)
-            Anorm=1./A1
-            def invpdf(ii):
-                return (1./((Mmin**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
-            II=np.random.uniform(0,1,size=size)
-            return invpdf(II)
+            def invpdf(ii,mmin):
+                    return (1./((mmin**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
+            for i in range(len(Mmin)):
+                xx=np.linspace(Mmin[i],Mmax,1000)
+                A1=trapz(pdf(xx),x=xx)
+                Anorm=1./A1
 
+                II=np.random.uniform(0,1)
+                Mhe_samp.append(invpdf(II,Mmin[i]))
+            return np.array(Mhe_samp)
             
 
         if method=='uniform':
@@ -243,7 +248,7 @@ class Sample:
 
 
     # sample kick velocities
-    def sample_Vkick(self, scale=265, Vmin=0, Vmax=2500, method='maxwellian', size=None,Mhe=None,ECSPDF=None,CCSPDF=None):
+    def sample_Vkick(self, scale=265, Vmin=0, Vmax=2500, method='maxwellian', size=None,Mhe=None,ECSPDF=None,CCSPDF=None,irand=None):
         '''
         sample kick velocity from Maxwellian (Hobbs 2005, default) or uniformly (Wong 2010)
         '''
@@ -251,6 +256,14 @@ class Sample:
             Vkick_samp=[]
             for i in range(len(Mhe)):
                 if Mhe[i]<=2.25:
+                    Vkick_samp.append(ECSPDF.rvs())
+                else:
+                    Vkick_samp.append(CCSPDF.rvs())
+            return np.array(Vkick_samp)
+        if method=='beniamini2':
+            Vkick_samp=[]
+            for i in range(len(irand)):
+                if irand[i]<=0.6:
                     Vkick_samp.append(ECSPDF.rvs())
                 else:
                     Vkick_samp.append(CCSPDF.rvs())

@@ -227,6 +227,7 @@ class Sample:
             
             def pdf(m):
                 return m**-2.35
+
             def invpdf(ii,mmin):
                     return (1./((mmin**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
             for i in range(len(Mmin)):

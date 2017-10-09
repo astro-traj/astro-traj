@@ -29,14 +29,14 @@ from scipy.integrate import quad
 import pdb
 
 __author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
-__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>' 
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 __all__ = ['Galaxy_Models', 'Hernquist_NFW', 'Miyamoto_Nagai_NFW', 'Belczynski_2002']
 
 class Galaxy_Models(object):
 
     def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, h, rcut):
         """
-        Galaxy class. Masses in Msun, distances in kpc. Immediately converted to SI. 
+        Galaxy class. Masses in Msun, distances in kpc. Immediately converted to SI.
         """
         self.Mspiral = Mspiral*C.M_sun.value
         self.Mbulge = Mbulge*C.M_sun.value
@@ -60,7 +60,7 @@ class Belczynski_2002(Galaxy_Models):
              Uhalo goes like 1/r for r>rcut
 
 
-        
+
     """
     def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, h, rcut):
         # Shared galaxy params
@@ -117,7 +117,7 @@ class Belczynski_2002(Galaxy_Models):
         else: return -self.G*self.Mhalo*(term1+term2+term3)/rcore
 
 
-    def bulge(self, r_i, r): 
+    def bulge(self, r_i, r):
         """
         gradient of Ubulge
         """
@@ -279,7 +279,7 @@ class Miyamoto_Nagai_NFW(Galaxy_Models):
 
             i is component of interest, j is the other non-z component
             """
-            return 
+            return
 
         def bulge_z(self, x, y, z):
             """
@@ -287,7 +287,7 @@ class Miyamoto_Nagai_NFW(Galaxy_Models):
 
             """
             return
-        
+
         def disk_xy(self, r_i, r_j, z):
             """
             X and Y components of gradient of Udisk

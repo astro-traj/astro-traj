@@ -28,7 +28,7 @@ from scipy.stats import rv_continuous
 from astropy.table import Table
 __author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
 __credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
-__all__ = ['Sample', 'Hernquist_pdf']
+__all__ = ['Sample', 'Hernquist_pdf', 'BeniaminiKick_pdf', 'BeniaminiMhe_pdf']
 
 class Hernquist_pdf(rv_continuous):
     '''
@@ -57,14 +57,16 @@ class Hernquist_pdf(rv_continuous):
         Cnorm = normFac(self.rcut/self.abulge)            # NOTE: rcut needs to be in terms of abulge for normalization
         return 2 * Cnorm*r * self.abulge * (self.abulge + r)**(-3)
 
+
 class BeniaminiKick_pdf(rv_continuous):
     '''
-    vkick pdf from Beniamini
+    vkick pdf from Beniamini Equation 7: https://arxiv.org/pdf/1510.03111.pdf#equation.4.7
+    the default on sigvk comes from the paper sig_log(v_k))=sinh^−1(0.5)
     '''
-    def __init__(self,Vk0,sigvk = np.arcsinh(.5),momtype=1, a=None, b=None, xtol=1e-14,
+    def __init__(self, Vk0, sigvk = np.arcsinh(.5), momtype=1, a=None, b=None, xtol=1e-14,
                  badvalue=None, name=None, longname=None,
                  shapes=None, extradoc=None, seed=None):
-        
+
         rv_continuous.__init__(self, momtype, a, b, xtol,
                  badvalue, name, longname,
                  shapes, extradoc, seed)
@@ -75,25 +77,30 @@ class BeniaminiKick_pdf(rv_continuous):
             term1 = 1/(np.sqrt(2.0*np.pi)*self.sigvk*Vk)
             term2 = np.exp(-(np.log(Vk/self.Vk0)**2)/(2.0*(self.sigvk**2)))
             return term1*term2
-        
+
+
 class BeniaminiMhe_pdf(rv_continuous):
     '''
-    vkick pdf from Beniamini
+    vkick pdf from Beniamini  Equation 7: https://arxiv.org/pdf/1510.03111.pdf#equation.4.7
+    the default on sigdM comes from the paper sig_log(deltaM))=sinh^−1(0.5)
     '''
-    def __init__(self,dM0,sigdM = np.arcsinh(.5),momtype=1, a=None, b=None, xtol=1e-14,
+    def __init__(self, dM0, sigdM = np.arcsinh(.5), momtype=1, a=None, b=None, xtol=1e-14,
                  badvalue=None, name=None, longname=None,
                  shapes=None, extradoc=None, seed=None):
-        
+
         rv_continuous.__init__(self, momtype, a, b, xtol,
                  badvalue, name, longname,
                  shapes, extradoc, seed)
         self.dM0 = dM0
         self.sigdM = sigdM
 
+
     def _pdf(self,dM):
             term1 = 1/(np.sqrt(2.0*np.pi)*self.sigdM*dM)
             term2 = np.exp(-(np.log(dM/self.dM0)**2)/(2.0*(self.sigdM**2)))
-            return term1*term2 
+            return term1*term2
+
+
 class Sample:
     def __init__(self, gal):   # default rcut=0 does not truncate the distributions (i.e., they extend to infinity)
         '''
@@ -107,13 +114,13 @@ class Sample:
     def sample_masses(self, samples=None, method='posterior', size=None):
         """
         Samples m1 and m2 from posterior distrbution of your favorite PE run.
-        Samples from the posterior samples by default. 
+        Samples from the posterior samples by default.
         Can specify methods 'gaussian', 'mean', or 'median' to sample using other sampling methods
         """
 
         if not samples:
             raise ValueError("No posterior sample file specified!")
-        
+
         samples = Table.read(samples, format='ascii')
 
         if method=='posterior':
@@ -136,7 +143,7 @@ class Sample:
             m2 = np.random.normal(np.median(samples['m2_source']), samples['m2_source'].std(), size)
             return m1, m2
 
-        else: 
+        else:
             raise ValueError("Undefined sampling method: %s" % method)
 
 
@@ -144,13 +151,13 @@ class Sample:
     def sample_distance(self, samples=None, method='median', size=None):
         """
         Samples distance from posterior distrbution of your favorite PE run.
-        Just uses the mean value for distance by default. 
+        Just uses the mean value for distance by default.
         Can specify methods 'gaussian', 'mean', or 'posteriors' to sample using other methods
         """
 
         if not samples:
             raise ValueError("No posterior sample file specified!")
-        
+
         samples = Table.read(samples, format='ascii')
 
         if method=='posterior':
@@ -169,7 +176,7 @@ class Sample:
             d = np.random.normal(np.median(samples['distance']), samples['distance'].std(), size)
             return d
 
-        else: 
+        else:
             raise ValueError("Undefined sampling method: %s" % method)
 
 
@@ -186,7 +193,7 @@ class Sample:
             A_samp = 10**np.random.uniform(np.log10(Amin), np.log10(Amax), size)
             return A_samp
 
-        else: 
+        else:
             raise ValueError("Undefined sampling method: %s" % method)
 
 
@@ -199,7 +206,7 @@ class Sample:
             e_samp = np.zeros(size)
             return e_samp
 
-        else: 
+        else:
             raise ValueError("Undefined sampling method: %s" % method)
 
 
@@ -220,13 +227,13 @@ class Sample:
                 else:
                     dMhe_samp.append(CCSPDF.rvs())
             return np.array(dMhe_samp)+Mmin
-        
-                
+
         if method=='power':
             Mhe_samp=[]
             
             def pdf(m):
                 return m**-2.35
+<<<<<<< HEAD
             def invpdf(ii,mmin):
                     return (1./((mmin**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
             for i in range(len(Mmin)):
@@ -238,19 +245,29 @@ class Sample:
                 Mhe_samp.append(invpdf(II,Mmin[i]))
             return np.array(Mhe_samp)
             
+=======
+            xx=np.linspace(Mmin,Mmax,1000)
+            A1=trapz(pdf(xx),x=xx)
+            Anorm=1./A1
+            def invpdf(ii):
+                return (1./((Mmin**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
+            II=np.random.uniform(0,1,size=size)
+            return invpdf(II)
+
+>>>>>>> 8625d54c4d79c26101b289740df418da7509ac71
 
         if method=='uniform':
             Mhe_samp = np.random.uniform(Mmin, Mmax, size=size)
             return Mhe_samp
 
-        else: 
+        else:
             raise ValueError("Undefined sampling method: %s" % method)
 
 
     # sample kick velocities
     def sample_Vkick(self, scale=265, Vmin=0, Vmax=2500, method='maxwellian', size=None,Mhe=None,ECSPDF=None,CCSPDF=None,irand=None):
         '''
-        sample kick velocity from Maxwellian (Hobbs 2005, default) or uniformly (Wong 2010)
+        sample kick velocity from Maxwellian (Hobbs 2005, default) or uniformly (Wong 2010) or Beniamini (2016): https://arxiv.org/pdf/1510.03111.pdf#equation.4.7
         '''
         if method=='beniamini':
             Vkick_samp=[]
@@ -270,6 +287,7 @@ class Sample:
             return np.array(Vkick_samp)
                     
             
+
         if method=='maxwellian':
             Vkick_samp = maxwell.rvs(loc=0, scale=scale, size=size)
             return Vkick_samp
@@ -278,21 +296,37 @@ class Sample:
             Vkick_samp = np.random.uniform(Vmin, Vmax, size=size)
             return Vkick_samp
 
-        else: 
+        else:
             raise ValueError("Undefined sampling method: %s" % method)
-    def initialize_Mhe(self,dM0):
-        return BeniaminiMhe_pdf(dM0,a=0)
+
+
+    def initialize_Mhe(self, dM0):
+        '''
+        Initializes the Beniamini_Mhe PDF: https://arxiv.org/pdf/1510.03111.pdf#equation.4.7
+        '''
+        return BeniaminiMhe_pdf(dM0, a=0)
+
+
     def initialize_Vkick(self):
-        ECS = BeniaminiKick_pdf(5.0,a=0)
-        CCS = BeniaminiKick_pdf(158.0,a=0)
+        '''
+        Initializes the BeniaminiKick: https://arxiv.org/pdf/1510.03111.pdf#equation.4.7
+        For the “small e systems” the likelihood peaks at ∆M_s0= 0.1M and v_k0 = 5km/s
+        These results strongly suggest an ECS-type SN as  the  origin  of  the  companion  in  these  systems.
+        For  the “large e systems” the likelihood peaks at ∆M_0 = 1 M and v_k,0 = 158km/s
+        core-collapse SN
+        '''
+        ECS = BeniaminiKick_pdf(5.0, a=0)
+        CCS = BeniaminiKick_pdf(158.0, a=0)
         return ECS,CCS
+
+
     def initialize_R(self):
         '''
-        samples radial distance from galactic center according to specified potential function
+        Initializes a specified potential function
         '''
 
         if self.rcut == 0:
-            return Hernquist_pdf(abulge=self.abulge, rcut=self.rcut, a=0,name='my_pdf')
+            return Hernquist_pdf(abulge=self.abulge, rcut=self.rcut, a=0, name='my_pdf')
         else:
             return Hernquist_pdf(abulge=self.abulge, rcut=self.rcut, a=0, b=self.rcut, name='my_pdf')
 

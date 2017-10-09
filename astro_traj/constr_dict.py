@@ -49,7 +49,7 @@ def galaxy(galaxy_name, filename_samples, r_eff, offset, h):
     # Dic of Galaxies containing dicts about properities
     Galaxy_Dict = {
 
-        'NGC': {   
+        'NGC': {
             'Mspiral': 0.0,                     # mass of the spiral (Msun) # NOTE: this information is not available, for now set to 0
             'Mbulge': (10**10.454)/h**2,        # Mstellar from 2MASS (Msun)
             'Mhalo': (10**12.2)/h,              # Mhalo from 2MASS (Msun)
@@ -64,7 +64,7 @@ def galaxy(galaxy_name, filename_samples, r_eff, offset, h):
     Galaxy['offset'] = offset
 
     return Galaxy
-    
+
 
 def telescope(telescope_name):
     """

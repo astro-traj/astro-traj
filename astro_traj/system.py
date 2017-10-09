@@ -18,7 +18,7 @@
 
 """
 Places system described by Mhe, M2, Apre, epre and position r(R,galphi,galcosth) in galaxy model gal
-Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V
+Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V    
 """
 
 import numpy as np
@@ -39,10 +39,10 @@ class System:
     Places system described by Mhe, M2, Apre, epre and position r(R,galphi,galcosth) in galaxy model gal
 
     Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V
-
+    
     """
     def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, sys_flag=None, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
-        """
+        """ 
         #Masses in Msun, Apre in Rsun, Vkick in km/s, R in kpc
         #galphi,galcosth,omega, phi, costh (position, initial velocity, and kick angles) sampled randomly, unless specified (>-1)
         #galphi, galcosth correspond to azimuthal and polar angles -- respectively --  in the galactic frame
@@ -51,9 +51,9 @@ class System:
         #   phi: angle between Z axis and projection of kick onto X-Z plane
         #omega: angle between the galactic velocity corresponding to a circular orbit in the r-z plane and
         #the actual galactic velocity preSN corresponding to a circular orbit
-
+        
         """
-
+    
         # Convert inputs to SI
         Mhe = Mhe*u.M_sun.to(u.kg)
         M2 = M2*u.M_sun.to(u.kg)
@@ -64,7 +64,7 @@ class System:
         d = d*u.Mpc.to(u.m)
 
         self.sys_flag = sys_flag
-
+        
         if galphi: self.galphi = galphi
         else: self.galphi = np.random.uniform(0,2*np.pi)
 
@@ -91,12 +91,12 @@ class System:
 
     def SN(self):
         """
-
+        
         Mhe lies on origin moving in direction of positive y axis, M2 on negative X axis, Z completes right-handed coordinate system
-
+        
         theta: angle between preSN He core velocity relative to M2 (i.e. the positive y axis) and the kick velocity
         phi: angle between Z axis and projection of kick onto X-Z plane
-
+        
         Vr is velocity of preSN He core relative to M2, directed along the positive y axis
 
         Vkick is kick velocity with components Vkx, Vky, Vkz in the above coordinate system
@@ -108,10 +108,10 @@ class System:
             We use Eq 1, 3, 4, and 34: giving Vr, Apost, epost, and (Vsx,Vsy,Vsz) respectively
             Also see Fig 1 in that paper for coordinate system
 
-
+        
         """
 
-        self.flag=0      # set standard flag
+        self.flag=0      # set standard flag        
 
         G = C.G.value
         Mhe, M2, Mns, Apre, Vkick, costh, phi = self.Mhe, self.M2, self.Mns, self.Apre, self.Vkick, self.costh, self.phi
@@ -126,7 +126,7 @@ class System:
         Vkx = Vkick*sinth*np.sin(phi)
         Vky = Vkick*costh
         Vkz = Vkick*sinth*np.cos(phi)
-        if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential':
+        if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential' or self.sys_flag == 'radial_simple2' or self.sys_flag == 'tangential2':
             Vkx,Vky,Vkz=0,-Vkick,0
         #Eq 1, Kalogera 1996
         Vr = np.sqrt(G*(Mhe+M2)/Apre)
@@ -143,7 +143,7 @@ class System:
         V_sys = np.sqrt((VSx**2)+(VSy**2)+(VSz**2))
 
         self.Apost, self.epost, self.VSx, self.VSy, self.VSz, self.V_sys, self.Vr = Apost, epost, VSx, VSy, VSz, V_sys, Vr
-
+        
         def SNCheck(self):
             """
             Paper References:
@@ -153,9 +153,9 @@ class System:
 
             Kalogera and Lorimer 2000: http://iopscience.iop.org/article/10.1086/308417/meta
 
-
+            
             V_He;preSN is the same variable as V_r from Kalogera 1996
-
+            
             """
             Mhe, M2, Mns, Apre, Apost, epost, Vr, Vkick = self.Mhe, self.M2, self.Mns, self.Apre, self.Apost, self.epost, self.Vr, self.Vkick
             #Equation numbers and quotes in comments correspond to Willems et al. 2002 paper on J1655.
@@ -163,13 +163,13 @@ class System:
             Mtot_post = Mns + M2
 
             # SNflag1: eq 21 (with typo fixed). Continuity demands Post SN orbit must pass through preSN positions.
-            #from Flannery & Van Heuvel 1975
+            #from Flannery & Van Heuvel 1975                                                             
 
             self.SNflag1 = (1-epost <= Apre/Apost) and (Apre/Apost <= 1+epost)
 
 
-            # SNflag2: Equations 22 & 23. "Lower and upper limits on amount of orbital contraction or expansion that can take place
-            #for a given amount of mass loss and a given magnitude of the kick velocity (see, e.g., Kalogera & Lorimer 2000)"
+            # SNflag2: Equations 22 & 23. "Lower and upper limits on amount of orbital contraction or expansion that can take place                                
+            #for a given amount of mass loss and a given magnitude of the kick velocity (see, e.g., Kalogera & Lorimer 2000)"                            
 
             self.SNflag2 = (Apre/Apost < 2-((Mtot_pre/Mtot_post)*((Vkick/Vr)-1)**2)) and (Apre/Apost > 2-((Mtot_pre/Mtot_post)*((Vkick/Vr)+1)**2))
 
@@ -209,12 +209,12 @@ class System:
 
 
     def getVcirc(self,X,Y,Z): #velocity of circular orbit in galactic potential at R
-        """
+        """ 
         Calculate circular velocity at X,Y,Z given potential. From mv2/r = -grad_r(U)
         FIXME: Will have to change for spiral potential, as circular velocity is assumed to be within the disk
         """
         Vdot = self.Vdot
-
+        
         COORD=[0,0,0,X,Y,Z]
         r=np.sqrt((X**2)+(Y**2)+(Z**2))
 
@@ -226,7 +226,7 @@ class System:
         return vcirc
 
     def setXYZ_0(self):
-        """
+        """ 
         Convert from spherical inputs to Cartesian coordinates
         """
         R = self.R
@@ -240,7 +240,7 @@ class System:
         self.Z0 = R*galcosth
 
     def setVxyz_0(self):
-        """
+        """ 
         Here, vphi and vcosth are as galphi and galcosth, and give random direction for V_sys postSN
 
         Initially, preSN circular trajectory Vp is the velocity vector of magnitude getVcirc,
@@ -256,7 +256,7 @@ class System:
 
         """
         if self.sys_flag:
-            if self.sys_flag not in ['circ_test','vkick_test','radial_iso','radial_x','radial_simple','tangential']:
+            if self.sys_flag not in ['circ_test','vkick_test','radial_iso','radial_x','radial_simple','tangential','radial_simple2','tangential2']:
                 raise ValueError("Unspecified flag '%s'" % self.sys_flag)
 
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
@@ -275,9 +275,9 @@ class System:
         vcosth = np.random.uniform(-1,1)    # Choose random direction for system velocity
         vsinth = np.sqrt(1-(vcosth**2))    # equivalent to choosing random orientation preSN
         Vtot = self.getVcirc(X0,Y0,Z0)
+        
 
-
-
+        
 
         if self.sys_flag=='vkick_test': Vtot = 0 #For checking that initial conditions correspond to circular galactic orbits
         if self.sys_flag=='radial_iso':
@@ -296,7 +296,7 @@ class System:
         #Rotate by omega while keeping perpendicular to R
         Vp_rot = (Vp*np.cos(omega)) + (np.cross(k,Vp)*np.sin(omega))
         Vp_rot_tot = np.sqrt((Vp[0]**2)+(Vp[1]**2)+(Vp[2]**2))
-        if self.sys_flag == 'tangential':
+        if self.sys_flag == 'tangential' or self.sys_flag== 'tangential2':
             vsys = [V_sys*Vp_rot[0]/Vp_rot_tot,V_sys*Vp_rot[1]/Vp_rot_tot,V_sys*Vp_rot[2]/Vp_rot_tot]
         Vx0,Vy0,Vz0 = Vp_rot + vsys
         if self.sys_flag =='radial_x':
@@ -305,9 +305,9 @@ class System:
             self.X0,self.Y0,self.Z0 = self.R,0.,0.
             Vx0,Vy0,Vz0 = V_sys,0.,0.
             self.galphi,self.galcosth = 0.,0.
-
-
-
+            
+            
+            
         self.Vxcirc0, self.Vycirc0, self.Vzcirc0 = Vp_rot
         self.Vtot = Vtot
 
@@ -319,7 +319,7 @@ class System:
         self.vsinth=vsinth
 
     def setTmerge(self, Tmin=0.0, Tmax=10.0): #NOTE we should check that this matches up with Maggiori equations
-        """
+        """ 
         Calculate the inspiral time for the binary after the supernova using formulae from Peters 1964
         """
         m1=self.Mns; m2=self.M2
@@ -348,7 +348,7 @@ class System:
 
 
     def doMotion(self, backend='dopri5', NSTEPS=1e13, MAX_STEP=u.year.to(u.s)*1e6, RTOL=1e-11):
-        """
+        """ 
         Second order equation ma=-grad(U) converted to 2 sets of first order equations, with
         e.g. x1 = x
              x2 = vx
@@ -366,7 +366,7 @@ class System:
         solver=ode(Vdot).set_integrator(backend,nsteps=NSTEPS,max_step=MAX_STEP,rtol=RTOL)
 
         def solout(t,y):
-            """
+            """ 
             function for saving integration results to sol[]
             """
             temp=list(y)
@@ -390,7 +390,7 @@ class System:
 
 
     def check_success(self, offset, uncer=0.5):
-        """
+        """ 
         # uncertainty in offset is 0.5 kpc by default
         # assume that the observer is looking down the z-axis (so the offset will be the projection of the binary on the x-y plane)
         """
@@ -410,7 +410,7 @@ class System:
 
 
     def energy_check(self, E_thresh = 1e-3):
-        """
+        """ 
         Compare total energy of first and last steps to ensure conservation
         Ek, Ep are kinetic and potential energy
 
@@ -443,7 +443,7 @@ class System:
 
         if np.abs((Ei-Ef)/Ei) > E_thresh:
             self.flag=4 # Energy not conserved!!!
-
+        
 
     def write_data(self):
         """
@@ -464,7 +464,7 @@ class System:
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
-        if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential':
+        if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential' or self.sys_flag == 'radial_simple2' or self.sys_flag == 'tangential2':
             self.vphi = np.nan
             self.vcosth = np.nan
             self.Rmerge_proj = np.nan
@@ -491,7 +491,7 @@ class System:
         # save initial conditions
         initial = np.atleast_2d([self.Vkick,self.Mhe,self.Apre,self.Apost,self.Rmerge,self.Vxcirc0,self.Vycirc0,self.Vzcirc0])
         dfi = pd.DataFrame(initial, columns=['Vkick','Mhe','Apre','Apost','Rmerge','vx','vy','vz'])
-        dfi.to_csv('evolution/'+filename+'_ini.dat', index=False)
+        dfi.to_csv('evolution/'+filename+'_ini.dat', index=False)        
 
         # save evolution
         evolution = np.vstack([[self.t],[self.X],[self.Y],[self.Z],[self.Vx],[self.Vy],[self.Vz]]).T

@@ -148,13 +148,13 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     # (km/s)
 
     
-    #if args.sys_flag=='radial_simple' or args.sys_flag=='tangential':
+    if args.sys_flag=='radial_simple' or args.sys_flag=='tangential' or args.sys_flag=='radial_simple2' or args.sys_flag=='tangential2':
         
-     #   R_dist = np.linspace(0.001,Galaxy['offset'],10)
-      #  Vkick_dist=np.linspace(0,1000,100)
-       # RV=np.array([[rr,vv] for rr in R_dist for vv in Vkick_dist]).transpose()
-        #R_dist=RV[0]
-        #Vkick_dist=RV[1]
+        R_dist = np.linspace(0.001,Galaxy['offset'],10)
+        Vkick_dist=np.linspace(0,1000,100)
+        RV=np.array([[rr,vv] for rr in R_dist for vv in Vkick_dist]).transpose()
+        R_dist=RV[0]
+        Vkick_dist=RV[1]
         
         
     
@@ -164,12 +164,22 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         # Calculate angular resolution of the telescope, convert to physical size at the distance of merger
         theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
         D_theta = d*np.tan(theta)                          # units of Mpc
-        Galaxy['offset_uncer'] = D_theta*u.Mpc.to(u.kpc)   # offset uncertainty from angular resolution of telescope (kpc)
-
+        Galaxy['offset_uncer'] = 0.2   # offset uncertainty from angular resolution of telescope (kpc)
+        if args.sys_flag=='tangential' or args.sys_flag=='radial_simple':
+            Mns = 1.097
+            Mcomp = 1.713
+            Mhe = 3.0
+            Apre = 2.0
+        if args.sys_flag=='tangential2' or args.sys_flag=='radial_simple2':
+            Mns = 1.097
+            Mcomp = 1.713
+            Mhe = 5.0
+            Apre = 1.5
+            
         # initialize System class with pertinent parameters
         T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)
         # implement a SN kick to the system, and check to see if binary is disrupted
-        if T.sys_flag=='tangential':
+        if T.sys_flag=='tangential' or T.sys_flag=='tangential2':
             if R>Galaxy['offset']:continue
             T.SN()
             if T.flag==3:continue
@@ -190,13 +200,12 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
                     break
             continue
 
-        if T.sys_flag=='radial_simple':
+        if T.sys_flag=='radial_simple' or T.sys_flag=='radial_simple2':
             if R>Galaxy['offset']:continue
             T.SN()
             if T.flag==3:continue
             T.X0,T.Y0,T.Z0=T.R,0.,0.
             T.Vx0,T.Vy0,T.Vz0 = T.V_sys,0.,0.
-            pdb.set_trace()
             T.Tmerge = 0.1*u.Gyr.to(u.s)
             T.doMotion()
             for i in range(len(T.X)):

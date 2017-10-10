@@ -83,6 +83,38 @@ The posterior method is used by default. This simply means that we draw samples 
 .. plot::
    :include-source:
 
+    >>> from astro_traj.galaxy import Hernquist_NFW
+    >>> from astro_traj import constr_dict
+    >>> from astro_traj.sample import Sample
+    >>> import numpy as np
+    >>> from matplotlib import use
+    >>> use('agg')
+    >>> import matplotlib.pyplot as plt
+
+    >>> samples = 'posterior_samples.dat'
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> samp = Sample(gal)
+    >>> Nsys = 1000
+    >>> bins = int(np.round(np.sqrt(Nsys)))
+
+    >>> Mcomp_dist_posterior, Mns_dist_posterior = samp.sample_masses(samples, method='posterior', size=Nsys)
+    >>> Mcomp_dist_median, Mns_dist_median = samp.sample_masses(samples, method='median', size=Nsys)
+    >>> Mcomp_dist_mean, Mns_dist_mean = samp.sample_masses(samples, method='mean', size=Nsys)
+    >>> Mcomp_dist_gaussian, Mns_dist_gaussian = samp.sample_masses(samples, method='gaussian', size=Nsys)
+     
+
+    >>> plot, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, sharex=True, figsize=(18.5, 10.5))
+    >>> ax1.hist(Mcomp_dist_posterior, bins=bins)
+    >>> ax2.hist(Mcomp_dist_median, bins=bins)
+    >>> ax3.hist(Mcomp_dist_mean, bins=bins)
+    >>> ax4.hist(Mcomp_dist_gaussian, bins=bins)
+    >>> ax5.hist(Mns_dist_posterior, bins=bins)
+    >>> ax6.hist(Mns_dist_median, bins=bins)
+    >>> ax7.hist(Mns_dist_mean, bins=bins)
+    >>> ax8.hist(Mns_dist_gaussian, bins=bins)
+    >>> plot.show()
+
 Distance
 --------
 :meth:`~astro_traj.sample.Sample.sample_distance`
@@ -94,48 +126,219 @@ The default method is median (i.e. the median value from the Gravitational Wave 
 .. plot::
    :include-source:
 
+    >>> from astro_traj.galaxy import Hernquist_NFW
+    >>> from astro_traj import constr_dict
+    >>> from astro_traj.sample import Sample
+    >>> import numpy as np
+    >>> from matplotlib import use
+    >>> use('agg')
+    >>> import matplotlib.pyplot as plt
+
+    >>> samples = 'posterior_samples.dat'
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> samp = Sample(gal)
+    >>> Nsys = 1000
+    >>> bins = int(np.round(np.sqrt(Nsys)))
+
+    >>> d_dist_posterior = samp.sample_distance(samples, method='posterior', size=Nsys)
+    >>> d_dist_median = samp.sample_distance(samples, method='median', size=Nsys)
+    >>> d_dist_mean = samp.sample_distance(samples, method='mean', size=Nsys)
+    >>> d_dist_gaussian = samp.sample_distance(samples, method='gaussian', size=Nsys)
+
+    >>> plot, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharex=True, figsize=(18.5, 10.5))
+    >>> ax1.hist(d_dist_posterior, bins=bins)
+    >>> ax2.hist(d_dist_median, bins=bins)
+    >>> ax3.hist(d_dist_mean, bins=bins)
+    >>> ax4.hist(d_dist_gaussian, bins=bins)
+    >>> plot.show()
+
 Pre Supernova Semi Major Axis
 -----------------------------
 :meth:`~astro_traj.sample.Sample.sample_Apre`
 
-The available methods for sampling are 'gaussian', 'mean', 'median', or 'posterior'::
+The available methods for sampling are 'uniform' and 'log'::
 
-    >>> 
+    >>> Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method='uniform', size=Nsys)
 
 .. plot::
    :include-source:
+
+
+    >>> from astro_traj.galaxy import Hernquist_NFW
+    >>> from astro_traj import constr_dict
+    >>> from astro_traj.sample import Sample
+    >>> import numpy as np
+    >>> from matplotlib import use
+    >>> use('agg')
+    >>> import matplotlib.pyplot as plt
+
+    >>> samples = 'posterior_samples.dat'
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> samp = Sample(gal)
+    >>> Nsys = 1000
+    >>> bins = int(np.round(np.sqrt(Nsys)))
+
+    >>> Apre_dist_log = samp.sample_Apre(Amin=0.1, Amax=10.0, method='log', size=Nsys)
+    >>> Apre_dist_uniform = samp.sample_Apre(Amin=0.1, Amax=10.0, method='uniform', size=Nsys)
+
+    >>> plot, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(18.5, 10.5))
+    >>> ax1.hist(Apre_dist_log, bins=bins)
+    >>> ax2.hist(Apre_dist_uniform, bins=bins)
+    >>> plot.show()
 
 Pre Supernova eccentricity
 --------------------------
 :meth:`~astro_traj.sample.Sample.sample_epre`
 
+The available method for sampling is 'circularized'::
+
+    >>> epre_dist = samp.sample_epre(method='circularized', size=Nsys)
+
 
 .. plot::
    :include-source:
+
+    >>> from astro_traj.galaxy import Hernquist_NFW
+    >>> from astro_traj import constr_dict
+    >>> from astro_traj.sample import Sample
+    >>> import numpy as np
+    >>> from matplotlib import use
+    >>> use('agg')
+    >>> import matplotlib.pyplot as plt
+
+    >>> samples = 'posterior_samples.dat'
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> samp = Sample(gal)
+    >>> Nsys = 1000
+    >>> bins = int(np.round(np.sqrt(Nsys)))
+
+    >>> epre_dist_circularized = samp.sample_epre(method='circularized', size=Nsys)
+
+    >>> plot, ax1 = plt.subplots(1, sharex=True)
+    >>> ax1.hist(epre_dist_circularized, bins=bins)
+    >>> plot.show()
+
 
 Initialize Off Set From Center
 ------------------------------
 :meth:`~astro_traj.sample.Sample.initialize_R`
-:meth:`~astro_traj.sample.Sample.sample_R`
+:meth:`~astro_traj.sample.Sample.sample_R`::
+
+    >>> PDFR = samp.initialize_R()
+    >>> R_dist = samp.sample_R(PDFR, Nsys) # (kpc)
 
 .. plot::
    :include-source:
+
+    >>> from astro_traj.galaxy import Hernquist_NFW
+    >>> from astro_traj import constr_dict
+    >>> from astro_traj.sample import Sample
+    >>> import numpy as np
+    >>> from matplotlib import use
+    >>> use('agg')
+    >>> import matplotlib.pyplot as plt
+
+    >>> samples = 'posterior_samples.dat'
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> samp = Sample(gal)
+    >>> Nsys = 1000
+    >>> bins = int(np.round(np.sqrt(Nsys)))
+
+    >>> PDFR = samp.initialize_R()
+    >>> R_dist = samp.sample_R(PDFR, Nsys)
+
+    >>> plot, ax1 = plt.subplots(1, sharex=True)
+    >>> ax1.hist(R_dist, bins=bins)
+    >>> plot.show()
 
 Mass of Pre Supernova Helium Star
 ---------------------------------
 :meth:`~astro_traj.sample.Sample.initialize_Mhe`
-:meth:`~astro_traj.sample.Sample.sample_Mhe`
+:meth:`~astro_traj.sample.Sample.sample_Mhe`::
+
+Available methods include 'power', 'uniform', 'beniamini2'::
+
+    >>> ECSPDFMhe = samp.initialize_Mhe(0.1)
+    >>> CCSPDFMhe = samp.initialize_Mhe(1.0)
+    >>> dumrand = np.random.uniform(0,1,size=Nsys)
+    >>> Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method='uniform', size=Nsys, PDF=PDFMhe, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
 
 .. plot::
    :include-source:
+
+    >>> from astro_traj.galaxy import Hernquist_NFW
+    >>> from astro_traj import constr_dict
+    >>> from astro_traj.sample import Sample
+    >>> import numpy as np
+    >>> from matplotlib import use
+    >>> use('agg')
+    >>> import matplotlib.pyplot as plt
+
+    >>> samples = 'posterior_samples.dat'
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> samp = Sample(gal)
+    >>> Nsys = 1000
+    >>> bins = int(np.round(np.sqrt(Nsys)))
+    >>> Mcomp_dist, Mns_dist = samp.sample_masses(samples, method='posterior', size=Nsys)
+
+    >>> ECSPDFMhe = samp.initialize_Mhe(0.1)
+    >>> CCSPDFMhe = samp.initialize_Mhe(1.0)
+    >>> dumrand = np.random.uniform(0,1,size=Nsys)
+    >>> Mhe_dist_uniform = samp.sample_Mhe(Mmin=Mns_dist, method='uniform', size=Nsys, PDF=None, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
+    >>> Mhe_dist_power = samp.sample_Mhe(Mmin=Mns_dist, method='power', size=Nsys, PDF=None, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
+    >>> Mhe_dist_beniamini2 = samp.sample_Mhe(Mmin=Mns_dist, method='beniamini2', size=Nsys, PDF=None, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
+
+    >>> plot, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(18.5, 10.5))
+    >>> ax1.hist(Mhe_dist_uniform, bins=bins)
+    >>> ax2.hist(Mhe_dist_power, bins=bins)
+    >>> ax3.hist(Mhe_dist_beniamini2, bins=bins)
+    >>> plot.show()
+
 
 Supernova Kick Velocity
 -----------------------
 :meth:`~astro_traj.sample.Sample.initialize_Vkick`
 :meth:`~astro_traj.sample.Sample.sample_Vkick`
 
+Available methods include 'maxwellian', 'uniform', 'beniamini2'::
+
+    >>> ECS,CCS = samp.initialize_Vkick()
+    >>> Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=Mhe_dist, irand=dumrand)
+
 .. plot::
    :include-source:
+
+    >>> from astro_traj.galaxy import Hernquist_NFW
+    >>> from astro_traj import constr_dict
+    >>> from astro_traj.sample import Sample
+    >>> import numpy as np
+    >>> from matplotlib import use
+    >>> use('agg')
+    >>> import matplotlib.pyplot as plt
+
+    >>> samples = 'posterior_samples.dat'
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> samp = Sample(gal)
+    >>> Nsys = 1000
+    >>> bins = int(np.round(np.sqrt(Nsys)))
+    >>> dumrand = np.random.uniform(0,1,size=Nsys)
+
+    >>> ECS,CCS = samp.initialize_Vkick()
+    >>> Vkick_dist_uniform = samp.sample_Vkick(method='uniform', size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=None, irand=dumrand)
+    >>> Vkick_dist_maxwellian = samp.sample_Vkick(method='maxwellian', size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=None, irand=dumrand)
+    >>> Vkick_dist_beniamini2 = samp.sample_Vkick(method='beniamini2', size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=None, irand=dumrand)
+
+    >>> plot, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(18.5, 10.5))
+    >>> ax1.hist(Vkick_dist_uniform, bins=bins)
+    >>> ax2.hist(Vkick_dist_maxwellian, bins=bins)
+    >>> ax3.hist(Vkick_dist_beniamini2, bins=bins)
+    >>> plot.show()
 
 Supernova
 =========

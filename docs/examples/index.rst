@@ -92,7 +92,7 @@ The posterior method is used by default. This simply means that we draw samples 
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 10000
+    >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> Mcomp_dist_posterior, Mns_dist_posterior = samp.sample_masses(samples, method='posterior', size=Nsys)
@@ -143,7 +143,7 @@ The default method is median (i.e. the median value from the Gravitational Wave 
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 10000
+    >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> d_dist_posterior = samp.sample_distance(samples, method='posterior', size=Nsys)
@@ -185,7 +185,7 @@ The available methods for sampling are 'uniform' and 'log'. This value is the pr
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 10000
+    >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> Apre_dist_log = samp.sample_Apre(Amin=0.1, Amax=10.0, method='log', size=Nsys)
@@ -223,7 +223,7 @@ The available method for sampling is 'circularized'::
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 10000
+    >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> epre_dist_circularized = samp.sample_epre(method='circularized', size=Nsys)
@@ -256,7 +256,7 @@ We create a custom distribution to sample the intiial galactic offset of the pre
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 10000
+    >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> PDFR = samp.initialize_R()
@@ -296,7 +296,7 @@ Available methods include 'power', 'uniform', 'beniamini2'.
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 10000
+    >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
     >>> Mcomp_dist, Mns_dist = samp.sample_masses(samples, method='posterior', size=Nsys)
 
@@ -344,7 +344,7 @@ Available methods include 'maxwellian', 'uniform', 'beniamini2'.
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 10000
+    >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
     >>> dumrand = np.random.uniform(0,1,size=Nsys)
 
@@ -394,13 +394,13 @@ We utilize `Kalogera 1996 <http://iopscience.iop.org/article/10.1086/177974/meta
     >>> from matplotlib import use
     >>> use('agg')
     >>> import matplotlib.pyplot as plt
-    >>> font = {'size': 22}
+    >>> font = {'size': 16}
 
     >>> samples = 'posterior_samples.dat'
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 10000
+    >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
     >>> dumrand = np.random.uniform(0,1,size=Nsys)
 
@@ -451,16 +451,37 @@ We utilize `Kalogera 1996 <http://iopscience.iop.org/article/10.1086/177974/meta
     >>>     else:
     >>>         successful_binaries_uni_power_maxwell.append(False)
     
-    >>> plot, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(18.5, 10.5))
+    >>> plot, ((ax1, ax4, ax7), (ax2, ax5, ax8), (ax3, ax6, ax9)) = plt.subplots(3, 3, sharex='col', figsize=(18.5, 10.5))
     >>> ax1.hist(Mhe_dist_beniamini2, bins=bins)
     >>> ax2.hist(Mhe_dist_uniform, bins=bins)
     >>> ax3.hist(Mhe_dist_power, bins=bins)
     >>> ax1.hist(Mhe_dist_beniamini2[successful_binaries_log_ben2_ben2], bins=bins)
     >>> ax2.hist(Mhe_dist_uniform[successful_binaries_uni_uni_uni], bins=bins)
     >>> ax3.hist(Mhe_dist_power[successful_binaries_uni_power_maxwell], bins=bins)
-    >>> ax1.set_xlabel('Mass Helium Star: Apre: Log Mhe: ben2 Vkick: ben2', fontdict=font)
-    >>> ax2.set_xlabel('Mass Helium Star: Apre: uni Mhe: uni Vkick: uni', fontdict=font)
-    >>> ax3.set_xlabel('Mass Helium Star: Apre: uni Mhe: power Vkick: maxwell', fontdict=font)
+    >>> ax1.set_xlabel('Mhe: Apre: Log Mhe: ben2 Vkick: ben2', fontdict=font)
+    >>> ax2.set_xlabel('Mhe: Apre: uni Mhe: uni Vkick: uni', fontdict=font)
+    >>> ax3.set_xlabel('Mhe: Apre: uni Mhe: power Vkick: maxwell', fontdict=font)
+  
+    >>> ax4.hist(Vkick_dist_beniamini2, bins=bins)
+    >>> ax5.hist(Vkick_dist_uniform, bins=bins)
+    >>> ax6.hist(Vkick_dist_maxwellian, bins=bins)
+    >>> ax4.hist(Vkick_dist_beniamini2[successful_binaries_log_ben2_ben2], bins=bins)
+    >>> ax5.hist(Vkick_dist_uniform[successful_binaries_uni_uni_uni], bins=bins)
+    >>> ax6.hist(Vkick_dist_maxwellian[successful_binaries_uni_power_maxwell], bins=bins)
+    >>> ax4.set_xlabel('Vkick: Apre: Log Mhe: ben2 Vkick: ben2', fontdict=font)
+    >>> ax5.set_xlabel('Vkick: Apre: uni Mhe: uni Vkick: uni', fontdict=font)
+    >>> ax6.set_xlabel('Vkick: Apre: uni Mhe: power Vkick: maxwell', fontdict=font)
+  
+    >>> ax7.hist(Apre_dist_log, bins=bins)
+    >>> ax8.hist(Apre_dist_uniform, bins=bins)
+    >>> ax9.hist(Apre_dist_uniform, bins=bins)
+    >>> ax7.hist(Apre_dist_log[successful_binaries_log_ben2_ben2], bins=bins)
+    >>> ax8.hist(Apre_dist_uniform[successful_binaries_uni_uni_uni], bins=bins)
+    >>> ax9.hist(Apre_dist_uniform[successful_binaries_uni_power_maxwell], bins=bins)
+    >>> ax7.set_xlabel('Apre: Apre: Log Mhe: ben2 Vkick: ben2', fontdict=font)
+    >>> ax8.set_xlabel('Apre: Apre: uni Mhe: uni Vkick: uni', fontdict=font)
+    >>> ax9.set_xlabel('Apre: Apre: uni Mhe: power Vkick: maxwell', fontdict=font)
+    >>> plot.suptitle('Number of Succesful Binaries Post Supernova for a Variety of Init Cond')
     >>> plot.show()
 
 

@@ -27,12 +27,9 @@ This is done using :meth:`~astro_traj.constr_dict.galaxy`. In addition to creati
 
 Once, the galaxy and galaxy model is selected it is now time to sample over a large set of initial conditions of the system that you observed. These initial conditions include, the mass of pre supernova helium star, the kick velocity of the  supernova, the pre supernova semi major axis, initial distance from center of galaxy. After creating these intiail conditions we evolve the system to see if a.) there is a merger within some reasonable time (<14 Giga years) and b.) it merged at the appropriate off-set (with some error) from the center of the galaxy. The only value sampled over in the following section that is not relevant to the initial conditions of the system that you observed is the distance uncertianity of the hose galaxy (which impacts the uncertainity in the observed off set). This value is not necessary as fixed inflated errors bars can be used in order to be "safe". In the following sections, we dive into the code used to accomplish this.
 
-*********
-Technique
-*********
-
-Sampling
-========
+***************************
+Sampling Initial Conditions
+***************************
 
 In the executable, all of the sampling is done as such::
 
@@ -71,7 +68,7 @@ In the executable, all of the sampling is done as such::
     Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=Mhe_dist, irand=dumrand)
 
 Component and Secondary Mass
-----------------------------
+============================
 :meth:`~astro_traj.sample.Sample.sample_masses`
 
 The available methods for sampling are 'gaussian', 'mean', 'median', or 'posterior'::
@@ -81,7 +78,6 @@ The posterior method is used by default. This simply means that we draw samples 
     >>> Mcomp_dist, Mns_dist = samp.sample_masses(samples, method=args.Ms, size=Nsys)
 
 .. plot::
-   :include-source:
 
     >>> from astro_traj.galaxy import Hernquist_NFW
     >>> from astro_traj import constr_dict
@@ -96,7 +92,7 @@ The posterior method is used by default. This simply means that we draw samples 
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 1000
+    >>> Nsys = 10000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> Mcomp_dist_posterior, Mns_dist_posterior = samp.sample_masses(samples, method='posterior', size=Nsys)
@@ -125,7 +121,7 @@ The posterior method is used by default. This simply means that we draw samples 
     >>> plot.show()
 
 Distance
---------
+========
 :meth:`~astro_traj.sample.Sample.sample_distance`
 
 The default method is median (i.e. the median value from the Gravitational Wave parameter estimation pdf of distance. Again, this value is critical in calculating the uncertainity in the observed offset and can be circumvented by smartly chosen inflated error bars in the observed of set::
@@ -133,7 +129,6 @@ The default method is median (i.e. the median value from the Gravitational Wave 
     >>> d_dist = samp.sample_distance(samples, method=args.distance, size=Nsys) # (Mpc)
 
 .. plot::
-   :include-source:
 
     >>> from astro_traj.galaxy import Hernquist_NFW
     >>> from astro_traj import constr_dict
@@ -148,7 +143,7 @@ The default method is median (i.e. the median value from the Gravitational Wave 
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 1000
+    >>> Nsys = 10000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> d_dist_posterior = samp.sample_distance(samples, method='posterior', size=Nsys)
@@ -168,7 +163,7 @@ The default method is median (i.e. the median value from the Gravitational Wave 
     >>> plot.show()
 
 Pre Supernova Semi Major Axis
------------------------------
+=============================
 :meth:`~astro_traj.sample.Sample.sample_Apre`
 
 The available methods for sampling are 'uniform' and 'log'. This value is the pre-supernova semi major axis.::
@@ -176,8 +171,6 @@ The available methods for sampling are 'uniform' and 'log'. This value is the pr
     >>> Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method='uniform', size=Nsys)
 
 .. plot::
-   :include-source:
-
 
     >>> from astro_traj.galaxy import Hernquist_NFW
     >>> from astro_traj import constr_dict
@@ -192,7 +185,7 @@ The available methods for sampling are 'uniform' and 'log'. This value is the pr
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 1000
+    >>> Nsys = 10000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> Apre_dist_log = samp.sample_Apre(Amin=0.1, Amax=10.0, method='log', size=Nsys)
@@ -206,7 +199,7 @@ The available methods for sampling are 'uniform' and 'log'. This value is the pr
     >>> plot.show()
 
 Pre Supernova eccentricity
---------------------------
+==========================
 Because we assume circular orbits, we assume that the eccentricity of the system pre second supernova is neglible (set to 0 here), but do account for effects of eccentricity post second supernova.
 :meth:`~astro_traj.sample.Sample.sample_epre`
 
@@ -216,7 +209,6 @@ The available method for sampling is 'circularized'::
 
 
 .. plot::
-   :include-source:
 
     >>> from astro_traj.galaxy import Hernquist_NFW
     >>> from astro_traj import constr_dict
@@ -231,7 +223,7 @@ The available method for sampling is 'circularized'::
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 1000
+    >>> Nsys = 10000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> epre_dist_circularized = samp.sample_epre(method='circularized', size=Nsys)
@@ -243,14 +235,13 @@ The available method for sampling is 'circularized'::
 
 
 Initialize Off Set From Galactic Center
----------------------------------------
+=======================================
 We create a custom distribution to sample the intiial galactic offset of the pre second supernova system. The r_eff is used to control sampling at galactic offsets that are unrealistically far away from the center of the galaxy (i.e. we expect less binaries to form super far away from the galactic center and moreover some initial offsets may in fact be outside the plausible "diameter" of the galaxy. To initialize this PDF, we use :meth:`~astro_traj.sample.Sample.initialize_R`, to sample some number of outcomes from this PDF we use :meth:`~astro_traj.sample.Sample.sample_R`::
 
     >>> PDFR = samp.initialize_R()
     >>> R_dist = samp.sample_R(PDFR, Nsys) # (kpc)
 
 .. plot::
-   :include-source:
 
     >>> from astro_traj.galaxy import Hernquist_NFW
     >>> from astro_traj import constr_dict
@@ -265,7 +256,7 @@ We create a custom distribution to sample the intiial galactic offset of the pre
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 1000
+    >>> Nsys = 10000
     >>> bins = int(np.round(np.sqrt(Nsys)))
 
     >>> PDFR = samp.initialize_R()
@@ -277,7 +268,7 @@ We create a custom distribution to sample the intiial galactic offset of the pre
     >>> plot.show()
 
 Mass of Pre Supernova Helium Star
----------------------------------
+=================================
 :meth:`~astro_traj.sample.Sample.initialize_Mhe`
 :meth:`~astro_traj.sample.Sample.sample_Mhe`::
 
@@ -291,7 +282,6 @@ Available methods include 'power', 'uniform', 'beniamini2'.
     >>> Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method='uniform', size=Nsys, PDF=None, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
 
 .. plot::
-   :include-source:
 
     >>> from astro_traj.galaxy import Hernquist_NFW
     >>> from astro_traj import constr_dict
@@ -306,7 +296,7 @@ Available methods include 'power', 'uniform', 'beniamini2'.
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 1000
+    >>> Nsys = 10000
     >>> bins = int(np.round(np.sqrt(Nsys)))
     >>> Mcomp_dist, Mns_dist = samp.sample_masses(samples, method='posterior', size=Nsys)
 
@@ -328,7 +318,7 @@ Available methods include 'power', 'uniform', 'beniamini2'.
 
 
 Supernova Kick Velocity
------------------------
+=======================
 :meth:`~astro_traj.sample.Sample.initialize_Vkick`
 :meth:`~astro_traj.sample.Sample.sample_Vkick`
 
@@ -337,10 +327,9 @@ Available methods include 'maxwellian', 'uniform', 'beniamini2'.
 `Beniamini2 <https://arxiv.org/pdf/1510.03111.pdf#equation.4.7>`_ draws from two distributions, low eccentricity (ECS) and high eccentricity (CCSN), for the pre-supernova Helium Star and Kick Velocity distributions. It does so in a  60 40 split which is motivated by the number of such systems we observe in the Milky Way (6 and 4) which is shown in `Figure 2 <https://arxiv.org/pdf/1510.03111.pdf#figure.2>`_. The initialized values for the distribution are motivated form the paper where the deltaM_0 and Vkick_0 for ECS that corresponded to the maximum likelihood weere 0.1 and 5.0, respectively, and the deltaM_0 and Vkick_0 for ECS that corresponded to the maximum likelihood for CCSN were 1.0 and 158.0 respectively.::
 
     >>> ECS,CCS = samp.initialize_Vkick()
-    >>> Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=Mhe_dist, irand=dumrand)
+    >>> Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=None, irand=dumrand)
 
 .. plot::
-   :include-source:
 
     >>> from astro_traj.galaxy import Hernquist_NFW
     >>> from astro_traj import constr_dict
@@ -355,7 +344,7 @@ Available methods include 'maxwellian', 'uniform', 'beniamini2'.
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
     >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
     >>> samp = Sample(gal)
-    >>> Nsys = 1000
+    >>> Nsys = 10000
     >>> bins = int(np.round(np.sqrt(Nsys)))
     >>> dumrand = np.random.uniform(0,1,size=Nsys)
 
@@ -373,26 +362,119 @@ Available methods include 'maxwellian', 'uniform', 'beniamini2'.
     >>> ax3.set_xlabel('Supernova Kick Velocity: Beniamini2', fontdict=font)
     >>> plot.show()
 
+********************************
+Creating and Evolving the System
+********************************
+Now that we have successfully sampled a number of initial conditions for our pre-Supernova binary, we can create the :class:`~astro_traj.system.System`::
+
+    >>> # initialize System class with pertinent parameters
+    >>> T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)
+
+In the following sub-sections we discuss the forward modelling that occurs after the creation of this system.
+
 Supernova
 =========
-The very first thing that you have to do is taken the initial conditions of your pre-Supernova Helium star + neutron star system, and evolve Helium star through supernova to the post supernova mass. After doing this, the first check of the system occurs. That is, does a successful component mass result from the supernova 
+The very first thing that you have to do is take the initial conditions of your pre-Supernova Helium star + neutron star system, and evolve Helium star through supernova to the post supernova object + neutron star system. Naturally, not all initial conditions of pre-supernova helium star semi-major axis, etc. will successfully result in the creation of a binary system. Therefore, the first check of the forward modeling occurs, that is, does a successful binary result from the supernova.
 
 System Resulting from Supernova of Helium Star
 ----------------------------------------------
 :meth:`~astro_traj.system.System.SN`
-We utilize `Kalogera 1996 <http://iopscience.iop.org/article/10.1086/177974/meta>`_ From the documnetation, We use Eq 1, 3, 4, and 34: giving Vr, Apost, epost, and (Vsx,Vsy,Vsz) respectively Also see Fig 1 in that paper for coordinate system.
 
-Checking Supernova Flags
-------------------------
-`Willems et al 2002 <http://iopscience.iop.org/article/10.1086/429557/meta>`_: We use eq 21, 22, 23, 24, 25, 26 for checks of SN survival
+We utilize `Kalogera 1996 <http://iopscience.iop.org/article/10.1086/177974/meta>`_ in order to determine the properities of the post supernova binary (such as eccentricity of the system post supernova, additional mass etc.) From the documnetation, We use Eq 1, 3, 4, and 34: giving Vr, Apost, epost, and (Vsx,Vsy,Vsz), respectively. Also see Fig 1 in that paper for coordinate system. After calculating this post super system values we check for whether this system would be expected to result in the successful creation of a binary. We check 4 separate equations detailed in `Willems et al 2002 <http://iopscience.iop.org/article/10.1086/429557/meta>`_. Specifically, we use eq 21, 22, 23, 24, 25, 26 for checks of SN survival::
 
-Evolving System
-===============
+    >>> T.SN()
+
+.. plot::
+
+    >>> from astro_traj.galaxy import Hernquist_NFW
+    >>> from astro_traj import constr_dict
+    >>> from astro_traj.sample import Sample
+    >>> from astro_traj.system import System
+    >>> import numpy as np
+    >>> from matplotlib import use
+    >>> use('agg')
+    >>> import matplotlib.pyplot as plt
+    >>> font = {'size': 22}
+
+    >>> samples = 'posterior_samples.dat'
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> samp = Sample(gal)
+    >>> Nsys = 10000
+    >>> bins = int(np.round(np.sqrt(Nsys)))
+    >>> dumrand = np.random.uniform(0,1,size=Nsys)
+
+
+    >>> Mcomp_dist, Mns_dist = samp.sample_masses(samples, method='posterior', size=Nsys)
+    >>> d_dist = samp.sample_distance(samples, method='median', size=Nsys)
+    >>> Apre_dist_log = samp.sample_Apre(Amin=0.1, Amax=10.0, method='log', size=Nsys)
+    >>> Apre_dist_uniform = samp.sample_Apre(Amin=0.1, Amax=10.0, method='uniform', size=Nsys)
+    >>> epre_dist = samp.sample_epre(method='circularized', size=Nsys)
+    >>> PDFR = samp.initialize_R()
+    >>> R_dist = samp.sample_R(PDFR, Nsys)
+    >>> ECSPDFMhe = samp.initialize_Mhe(0.1)
+    >>> CCSPDFMhe = samp.initialize_Mhe(1.0)
+    >>> Mhe_dist_uniform = samp.sample_Mhe(Mmin=Mns_dist, method='uniform', size=Nsys, PDF=None, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
+    >>> Mhe_dist_power = samp.sample_Mhe(Mmin=Mns_dist, method='power', size=Nsys, PDF=None, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
+    >>> Mhe_dist_beniamini2 = samp.sample_Mhe(Mmin=Mns_dist, method='beniamini2', size=Nsys, PDF=None, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
+    >>> ECS, CCS = samp.initialize_Vkick()
+    >>> Vkick_dist_uniform = samp.sample_Vkick(method='uniform', size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=None, irand=dumrand)
+    >>> Vkick_dist_maxwellian = samp.sample_Vkick(method='maxwellian', size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=None, irand=dumrand)
+    >>> Vkick_dist_beniamini2 = samp.sample_Vkick(method='beniamini2', size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=None, irand=dumrand)
+
+    >>> successful_binaries_log_ben2_ben2 = []
+    >>> successful_binaries_uni_uni_uni = []
+    >>> successful_binaries_uni_power_maxwell = []
+
+    >>> for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist_log, epre_dist, Mhe_dist_beniamini2, Vkick_dist_beniamini2):
+    >>>     T = System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=None)
+    >>>     T.SN()
+    >>>     if T.flag != 3:
+    >>>         successful_binaries_log_ben2_ben2.append(True)
+    >>>     else:
+    >>>         successful_binaries_log_ben2_ben2.append(False)
+
+    >>> for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist_uniform, epre_dist, Mhe_dist_uniform, Vkick_dist_uniform):
+    >>>     T = System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=None)
+    >>>     T.SN()
+    >>>     if T.flag != 3:
+    >>>         successful_binaries_uni_uni_uni.append(True)
+    >>>     else:
+    >>>         successful_binaries_uni_uni_uni.append(False)
+
+
+    >>> for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist_uniform, epre_dist, Mhe_dist_power, Vkick_dist_maxwellian):
+    >>>     T = System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=None)
+    >>>     T.SN()
+    >>>     if T.flag != 3:
+    >>>         successful_binaries_uni_power_maxwell.append(True)
+    >>>     else:
+    >>>         successful_binaries_uni_power_maxwell.append(False)
+    
+    >>> plot, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(18.5, 10.5))
+    >>> ax1.hist(Mhe_dist_beniamini2, bins=bins)
+    >>> ax2.hist(Mhe_dist_uniform, bins=bins)
+    >>> ax3.hist(Mhe_dist_power, bins=bins)
+    >>> ax1.hist(Mhe_dist_beniamini2[successful_binaries_log_ben2_ben2], bins=bins)
+    >>> ax2.hist(Mhe_dist_uniform[successful_binaries_uni_uni_uni], bins=bins)
+    >>> ax3.hist(Mhe_dist_power[successful_binaries_uni_power_maxwell], bins=bins)
+    >>> ax1.set_xlabel('Mass Helium Star: Apre: Log Mhe: ben2 Vkick: ben2', fontdict=font)
+    >>> ax2.set_xlabel('Mass Helium Star: Apre: uni Mhe: uni Vkick: uni', fontdict=font)
+    >>> ax3.set_xlabel('Mass Helium Star: Apre: uni Mhe: power Vkick: maxwell', fontdict=font)
+    >>> plot.show()
+
+
+Evolving System Through Galaxy
+==============================
+In order to forward model successfully created binaries through the galaxy, one must calculate first how long it will take for the merger of the system in order to set the upper bound on the ODE used to evolve the Velocity (and X,Y,Z coordinates) of the system through the galaxy.
 
 Time to Merger Peters 1964
 --------------------------
 :meth:`~astro_traj.system.System.setTmerge`
-Checked against `Peters 1964 <https://doi.org/10.1103/PhysRev.136.B1224>`_
+Checked against `Peters 1964 <https://doi.org/10.1103/PhysRev.136.B1224>`_::
+
+    >>> # set merger time for trajectory integration, specify Tmin and Tmax in Gyr
+    >>> T.setTmerge(Tmin=0.0, Tmax=14.0)
 
 Distance of Binary From Center
 ------------------------------
@@ -400,13 +482,26 @@ First, you randomly select from initial XYZ direction.
 :meth:`~astro_traj.system.System.setXYZ_0`
 Next, you randomly select an initial velocity direction :meth:`~astro_traj.system.System.setVxyz_0`:
 Then based on Tmerge you solve an ODE and evolve XYZ until merger.
-:meth:`~astro_traj.system.System.doMotion`
+:meth:`~astro_traj.system.System.doMotion`::
+
+    >>> # choose random location on sphere of radius R
+    >>> T.setXYZ_0()
+    >>> # choose random direction for circular velocity, and add SN-imparted velocity to get V0
+    >>> T.setVxyz_0()
+
+    >>> # integrate trajectory until Tmerge
+    >>> T.doMotion()
 
 
 Check that conservation of energy is obeyed
 -------------------------------------------
 :meth:`~astro_traj.system.System.energy_check`
-Calculate the initial Energy of the system and the final energy and make sure it is conserved to within some small error (0.001)
+Calculate the initial Energy of the system and the final energy and make sure it is conserved to within some small error (0.001)::
+
+    >>> # check for energy conservation, and hold onto highest offset
+    >>> T.energy_check()
+    >>> if T.dEfrac > dEfrac:
+    >>>     dEfrac = T.dEfrac
 
 Checking Offset
 ===============

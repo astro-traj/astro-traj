@@ -182,10 +182,9 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         if T.sys_flag=='tangential' or T.sys_flag=='tangential2':
             if R>Galaxy['offset']:continue
             T.SN()
-            if T.flag==3:continue
             T.setXYZ_0()
             T.setVxyz_0()
-            
+            T.flag=9 
             T.Tmerge = 0.1*u.Gyr.to(u.s)
             T.doMotion()
             for i in range(len(T.X)):
@@ -203,7 +202,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         if T.sys_flag=='radial_simple' or T.sys_flag=='radial_simple2':
             if R>Galaxy['offset']:continue
             T.SN()
-            if T.flag==3:continue
+            T.flag=9
             T.X0,T.Y0,T.Z0=T.R,0.,0.
             T.Vx0,T.Vy0,T.Vz0 = T.V_sys,0.,0.
             T.Tmerge = 0.1*u.Gyr.to(u.s)

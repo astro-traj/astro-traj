@@ -90,6 +90,7 @@ The posterior method is used by default. This simply means that we draw samples 
     >>> from matplotlib import use
     >>> use('agg')
     >>> import matplotlib.pyplot as plt
+    >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
@@ -113,6 +114,14 @@ The posterior method is used by default. This simply means that we draw samples 
     >>> ax6.hist(Mns_dist_median, bins=bins)
     >>> ax7.hist(Mns_dist_mean, bins=bins)
     >>> ax8.hist(Mns_dist_gaussian, bins=bins)
+    >>> ax1.set_xlabel('Comp Mass: Posterior', fontdict=font)
+    >>> ax2.set_xlabel('Comp Mass: Median', fontdict=font)
+    >>> ax3.set_xlabel('Comp Mass: Mean', fontdict=font)
+    >>> ax4.set_xlabel('Comp Mass: Gaussian', fontdict=font)
+    >>> ax5.set_xlabel('NS Mass: Posterior', fontdict=font)
+    >>> ax6.set_xlabel('NS Mass: Median', fontdict=font)
+    >>> ax7.set_xlabel('NS Mass: Mean', fontdict=font)
+    >>> ax8.set_xlabel('NS Mass: Gaussian, fontdict=font')
     >>> plot.show()
 
 Distance
@@ -133,6 +142,7 @@ The default method is median (i.e. the median value from the Gravitational Wave 
     >>> from matplotlib import use
     >>> use('agg')
     >>> import matplotlib.pyplot as plt
+    >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
@@ -151,6 +161,10 @@ The default method is median (i.e. the median value from the Gravitational Wave 
     >>> ax2.hist(d_dist_median, bins=bins)
     >>> ax3.hist(d_dist_mean, bins=bins)
     >>> ax4.hist(d_dist_gaussian, bins=bins)
+    >>> ax1.set_xlabel('Distance: Posterior', fontdict=font)
+    >>> ax2.set_xlabel('Distance: Median', fontdict=font)
+    >>> ax3.set_xlabel('Distance: Mean', fontdict=font)
+    >>> ax4.set_xlabel('Distance: Gaussian', fontdict=font)
     >>> plot.show()
 
 Pre Supernova Semi Major Axis
@@ -172,6 +186,7 @@ The available methods for sampling are 'uniform' and 'log'::
     >>> from matplotlib import use
     >>> use('agg')
     >>> import matplotlib.pyplot as plt
+    >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
@@ -186,6 +201,8 @@ The available methods for sampling are 'uniform' and 'log'::
     >>> plot, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(18.5, 10.5))
     >>> ax1.hist(Apre_dist_log, bins=bins)
     >>> ax2.hist(Apre_dist_uniform, bins=bins)
+    >>> ax1.set_xlabel('Apre: Log', fontdict=font)
+    >>> ax2.set_xlabel('Apre: Uniform', fontdict=font)
     >>> plot.show()
 
 Pre Supernova eccentricity
@@ -207,6 +224,7 @@ The available method for sampling is 'circularized'::
     >>> from matplotlib import use
     >>> use('agg')
     >>> import matplotlib.pyplot as plt
+    >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
@@ -219,11 +237,12 @@ The available method for sampling is 'circularized'::
 
     >>> plot, ax1 = plt.subplots(1, sharex=True)
     >>> ax1.hist(epre_dist_circularized, bins=bins)
+    >>> ax1.set_xlabel('Eccentricity Pre-Supernova: Circularized', fontdict=font)
     >>> plot.show()
 
 
-Initialize Off Set From Center
-------------------------------
+Initialize Off Set From Galactic Center
+---------------------------------------
 :meth:`~astro_traj.sample.Sample.initialize_R`
 :meth:`~astro_traj.sample.Sample.sample_R`::
 
@@ -240,6 +259,7 @@ Initialize Off Set From Center
     >>> from matplotlib import use
     >>> use('agg')
     >>> import matplotlib.pyplot as plt
+    >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
@@ -253,6 +273,7 @@ Initialize Off Set From Center
 
     >>> plot, ax1 = plt.subplots(1, sharex=True)
     >>> ax1.hist(R_dist, bins=bins)
+    >>> ax1.set_xlabel('Initial Off Set from Galactic Center', fontdict=font)
     >>> plot.show()
 
 Mass of Pre Supernova Helium Star
@@ -260,7 +281,9 @@ Mass of Pre Supernova Helium Star
 :meth:`~astro_traj.sample.Sample.initialize_Mhe`
 :meth:`~astro_traj.sample.Sample.sample_Mhe`::
 
-Available methods include 'power', 'uniform', 'beniamini2'::
+Available methods include 'power', 'uniform', 'beniamini2'.
+
+`Beniamini2 <https://arxiv.org/pdf/1510.03111.pdf#equation.4.7>`_ draws from two distributions, low eccentricity (ECS) and high eccentricity (CCSN), for the pre-supernova Helium Star and Kick Velocity distributions. It does so in a  60 40 split which is motivated by the number of such systems we observe in the Milky Way (6 and 4) which is shown in `Figure 2 <https://arxiv.org/pdf/1510.03111.pdf#figure.2>`_. The initialized values for the distribution are motivated form the paper where the deltaM_0 and Vkick_0 for ECS that corresponded to the maximum likelihood weere 0.1 and 5.0, respectively, and the deltaM_0 and Vkick_0 for ECS that corresponded to the maximum likelihood for CCSN were 1.0 and 158.0 respectively.::
 
     >>> ECSPDFMhe = samp.initialize_Mhe(0.1)
     >>> CCSPDFMhe = samp.initialize_Mhe(1.0)
@@ -277,6 +300,7 @@ Available methods include 'power', 'uniform', 'beniamini2'::
     >>> from matplotlib import use
     >>> use('agg')
     >>> import matplotlib.pyplot as plt
+    >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
@@ -297,6 +321,9 @@ Available methods include 'power', 'uniform', 'beniamini2'::
     >>> ax1.hist(Mhe_dist_uniform, bins=bins)
     >>> ax2.hist(Mhe_dist_power, bins=bins)
     >>> ax3.hist(Mhe_dist_beniamini2, bins=bins)
+    >>> ax1.set_xlabel('Mass Helium Star: Uniform', fontdict=font)
+    >>> ax2.set_xlabel('Mass Helium Star: Power', fontdict=font)
+    >>> ax3.set_xlabel('Mass Helium Star: Beniamini2', fontdict=font)
     >>> plot.show()
 
 
@@ -305,7 +332,9 @@ Supernova Kick Velocity
 :meth:`~astro_traj.sample.Sample.initialize_Vkick`
 :meth:`~astro_traj.sample.Sample.sample_Vkick`
 
-Available methods include 'maxwellian', 'uniform', 'beniamini2'::
+Available methods include 'maxwellian', 'uniform', 'beniamini2'.
+
+`Beniamini2 <https://arxiv.org/pdf/1510.03111.pdf#equation.4.7>`_ draws from two distributions, low eccentricity (ECS) and high eccentricity (CCSN), for the pre-supernova Helium Star and Kick Velocity distributions. It does so in a  60 40 split which is motivated by the number of such systems we observe in the Milky Way (6 and 4) which is shown in `Figure 2 <https://arxiv.org/pdf/1510.03111.pdf#figure.2>`_. The initialized values for the distribution are motivated form the paper where the deltaM_0 and Vkick_0 for ECS that corresponded to the maximum likelihood weere 0.1 and 5.0, respectively, and the deltaM_0 and Vkick_0 for ECS that corresponded to the maximum likelihood for CCSN were 1.0 and 158.0 respectively.::
 
     >>> ECS,CCS = samp.initialize_Vkick()
     >>> Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys, ECSPDF=ECS, CCSPDF=CCS, Mhe=Mhe_dist, irand=dumrand)
@@ -320,6 +349,7 @@ Available methods include 'maxwellian', 'uniform', 'beniamini2'::
     >>> from matplotlib import use
     >>> use('agg')
     >>> import matplotlib.pyplot as plt
+    >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
     >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
@@ -338,6 +368,9 @@ Available methods include 'maxwellian', 'uniform', 'beniamini2'::
     >>> ax1.hist(Vkick_dist_uniform, bins=bins)
     >>> ax2.hist(Vkick_dist_maxwellian, bins=bins)
     >>> ax3.hist(Vkick_dist_beniamini2, bins=bins)
+    >>> ax1.set_xlabel('Supernova Kick Velocity: Uniform', fontdict=font)
+    >>> ax2.set_xlabel('Supernova Kick Velocity: Maxwellian', fontdict=font)
+    >>> ax3.set_xlabel('Supernova Kick Velocity: Beniamini2', fontdict=font)
     >>> plot.show()
 
 Supernova
@@ -365,10 +398,75 @@ Distance of Binary From Center
 ------------------------------
 First, you randomly select from initial XYZ direction.
 :meth:`~astro_traj.system.System.setXYZ_0`
+Next, you randomly select an initial velocity direction :meth:`~astro_traj.system.System.setVxyz_0`:
 Then based on Tmerge you solve an ODE and evolve XYZ until merger.
 :meth:`~astro_traj.system.System.doMotion`
 
 Checking Offset
 ===============
+Finally, You have a location for where in the galaxy your system merged. It is in XYZ so project onto XY plane and check if it matches to the observed off set (with some uncertainty in that offset accounted for).
 :meth:`~astro_traj.system.System.check_success`
 
+
+**********************************************
+Exploring Seemingly Optimal SN Kick Velocities
+**********************************************
+
+Two special case runs include setting --system-flag = 'tangential' or --system-flag = 'radial_simple'.
+
+These special realizations of the code ask the following questions: "Let us imagine the most seemingly optimal kick velocity direction of the SN that would result in getting us from some initial galactic offset that is smaller than the observed offset to the observed offset. This is the "radial_simple" case and it means that all of the kick velocity is "straight out" in the x direction. Conversely, let us imagine the most seemingly unoptimal way to get from some initial galactic offset that is smaller than the observed offset to the observed offset. This is the tangential case, which means all of velocity is perpendicular to the orbit." How would one explore the results from such systems?
+
+We simply do a special toy sampling in kick velocity (uniform 0 to 1000), and initial offset from center of the galaxy (uniform from 0.001 to observed offset). [Code](https://github.com/astro-traj/astro-traj/blob/master/bin/LIGOTraj#L151)::
+
+    if args.sys_flag=='radial_simple' or args.sys_flag=='tangential' or args.sys_flag=='radial_simple2' or args.sys_flag=='tangential2':
+
+        R_dist = np.linspace(0.001,Galaxy['offset'],10)
+        Vkick_dist=np.linspace(0,1000,100)
+        RV=np.array([[rr,vv] for rr in R_dist for vv in Vkick_dist]).transpose()
+        R_dist=RV[0]
+        Vkick_dist=RV[1]
+
+In addition, we check this toy sampling for a discrete set of realization of Mhs, Mhe, Mcomp and Apre. [Code](https://github.com/astro-traj/astro-traj/blob/master/bin/LIGOTraj#L168)::
+
+    if args.sys_flag=='tangential' or args.sys_flag=='radial_simple':
+        Mns = 1.097
+        Mcomp = 1.713
+        Mhe = 4.5
+        Apre = 2.0
+
+Assuming these types of kick directions will impact what initial Vsys, X0, Y0, Z0, ad Vx0, Vy0, and vz0 are calculated/assumed. For radial X0, is initial offset and vX0 is Vsys with Vy0 = vz0 = Y0 = z0 = 0. [Code](https://github.com/astro-traj/astro-traj/blob/master/bin/LIGOTraj#L202)::
+
+    if T.sys_flag=='radial_simple' or T.sys_flag=='radial_simple2':
+        if R>Galaxy['offset']:continue
+        T.SN()
+        T.flag=9
+        T.X0,T.Y0,T.Z0=T.R,0.,0.
+        T.Vx0,T.Vy0,T.Vz0 = T.V_sys,0.,0.
+        T.Tmerge = 0.1*u.Gyr.to(u.s)
+        T.doMotion()
+
+For tangential, X.Y.Z and Vz,Vy,Vz are calculated as normal [Code](https://github.com/astro-traj/astro-traj/blob/master/bin/LIGOTraj#L182)::
+
+    if T.sys_flag=='tangential' or T.sys_flag=='tangential2':
+        if R>Galaxy['offset']:continue
+        T.SN()
+        T.setXYZ_0()
+        T.setVxyz_0()
+        T.flag=9
+        T.Tmerge = 0.1*u.Gyr.to(u.s)
+        T.doMotion()
+
+but Vsys is [Code](https://github.com/astro-traj/astro-traj/blob/master/astro_traj/system.py#L299)::
+
+    #Rotate by omega while keeping perpendicular to R
+    Vp_rot = (Vp*np.cos(omega)) + (np.cross(k,Vp)*np.sin(omega))
+    Vp_rot_tot = np.sqrt((Vp[0]**2)+(Vp[1]**2)+(Vp[2]**2))
+    if self.sys_flag == 'tangential' or self.sys_flag== 'tangential2':
+        vsys = [V_sys*Vp_rot[0]/Vp_rot_tot,V_sys*Vp_rot[1]/Vp_rot_tot,V_sys*Vp_rot[2]/Vp_rot_tot]
+
+And in the SN kick calculated here  the kick vector is set as follows:
+
+[Code](https://github.com/astro-traj/astro-traj/blob/master/astro_traj/system.py#L129)::
+
+    if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential' or self.sys_flag == 'radial_simple2' or self.sys_flag == 'tangential2':
+        Vkx,Vky,Vkz=0,-Vkick,0

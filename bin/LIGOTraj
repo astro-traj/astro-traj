@@ -168,13 +168,13 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         if args.sys_flag=='tangential' or args.sys_flag=='radial_simple':
             Mns = 1.097
             Mcomp = 1.713
-            Mhe = 3.0
+            Mhe = 4.5
             Apre = 2.0
         if args.sys_flag=='tangential2' or args.sys_flag=='radial_simple2':
             Mns = 1.097
             Mcomp = 1.713
-            Mhe = 5.0
-            Apre = 1.5
+            Mhe = 1.5
+            Apre = 2.0
             
         # initialize System class with pertinent parameters
         T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)

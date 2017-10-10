@@ -9,7 +9,7 @@ Determining Charateristics of Progenitor
 Introduction
 ************
 
-The scenario this code attempts to address is the following. Say you observed a binary system in a galaxy that was a certain off-set from the center of that galaxy. You also have information about the masses of the system you observed. What, if anything, can you say about some of the properities of the system, such as pre-supernova semi major axis, supernova kick, etc, that create that system.
+The scenario this code attempts to address is the following. Say you observed a binary system in a galaxy that was a certain off-set from the center of that galaxy. You also have information about the masses of the system you observed. What, if anything, can you say about some of the properities of the system at its initial creation in the galaxy. Specifically, at the creation of the larger component mass of the system via a Supernova. The properities of the system at this stage that one needs to sample over inclue such as pre-supernova semi major axis, supernova kick, Mass of pre-supernova helium star, etc.
 
 In order to accomplish this, one would need to load in properities of the galaxy in which this system was created. For example this includes information such as::
 
@@ -25,7 +25,7 @@ This is done using :meth:`~astro_traj.constr_dict.galaxy`. In addition to creati
 
     >>> gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], h, rcut=100)
 
-Once, the galaxy and galaxy model is selected it is now time to sample over a large set of initial conditions of the system that you observed. These initial conditions include, the mass of pre supernova helium star, the kick velocity of the  supernova, the pre supernova semi major axis, initial distance from center of galaxy. After creating these intiail conditions we evolve the system to see if a.) there is a merger within some reasonable time (<14 Giga years) and b.) it merged at the appropriate off-set (with some error) from the center of the galaxy. In the following sections, we dive into the code used to accomplish this.
+Once, the galaxy and galaxy model is selected it is now time to sample over a large set of initial conditions of the system that you observed. These initial conditions include, the mass of pre supernova helium star, the kick velocity of the  supernova, the pre supernova semi major axis, initial distance from center of galaxy. After creating these intiail conditions we evolve the system to see if a.) there is a merger within some reasonable time (<14 Giga years) and b.) it merged at the appropriate off-set (with some error) from the center of the galaxy. The only value sampled over in the following section that is not relevant to the initial conditions of the system that you observed is the distance uncertianity of the hose galaxy (which impacts the uncertainity in the observed off set). This value is not necessary as fixed inflated errors bars can be used in order to be "safe". In the following sections, we dive into the code used to accomplish this.
 
 *********
 Technique
@@ -46,7 +46,7 @@ In the executable, all of the sampling is done as such::
     # (Msun)
 
     d_dist = samp.sample_distance(samples, method=args.distance, size=Nsys)
-    # (Mpc)
+    # (Mpc) (Not necessarily used, as inflated error bars in the observed galactic offset can be used to account for the distance (or uncertianity in distance) of the galaxy
 
 
     Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method=args.Apre, size=Nsys)
@@ -76,7 +76,7 @@ Component and Secondary Mass
 
 The available methods for sampling are 'gaussian', 'mean', 'median', or 'posterior'::
 
-The posterior method is used by default. This simply means that we draw samples directly from Gravitational Wave parameter estimation pdf of the source frame masses of the post supernova binary system::
+The posterior method is used by default. This simply means that we draw samples directly from Gravitational Wave parameter estimation pdf of the source frame masses of the observed binary system::
 
     >>> Mcomp_dist, Mns_dist = samp.sample_masses(samples, method=args.Ms, size=Nsys)
 
@@ -121,14 +121,14 @@ The posterior method is used by default. This simply means that we draw samples 
     >>> ax5.set_xlabel('NS Mass: Posterior', fontdict=font)
     >>> ax6.set_xlabel('NS Mass: Median', fontdict=font)
     >>> ax7.set_xlabel('NS Mass: Mean', fontdict=font)
-    >>> ax8.set_xlabel('NS Mass: Gaussian, fontdict=font')
+    >>> ax8.set_xlabel('NS Mass: Gaussian', fontdict=font)
     >>> plot.show()
 
 Distance
 --------
 :meth:`~astro_traj.sample.Sample.sample_distance`
 
-The default method is median (i.e. the median value from the Gravitational Wave parameter estimation pdf of distance::
+The default method is median (i.e. the median value from the Gravitational Wave parameter estimation pdf of distance. Again, this value is critical in calculating the uncertainity in the observed offset and can be circumvented by smartly chosen inflated error bars in the observed of set::
 
     >>> d_dist = samp.sample_distance(samples, method=args.distance, size=Nsys) # (Mpc)
 
@@ -171,7 +171,7 @@ Pre Supernova Semi Major Axis
 -----------------------------
 :meth:`~astro_traj.sample.Sample.sample_Apre`
 
-The available methods for sampling are 'uniform' and 'log'::
+The available methods for sampling are 'uniform' and 'log'. This value is the pre-supernova semi major axis.::
 
     >>> Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method='uniform', size=Nsys)
 
@@ -207,6 +207,7 @@ The available methods for sampling are 'uniform' and 'log'::
 
 Pre Supernova eccentricity
 --------------------------
+Because we assume circular orbits, we assume that the eccentricity of the system pre second supernova is neglible (set to 0 here), but do account for effects of eccentricity post second supernova.
 :meth:`~astro_traj.sample.Sample.sample_epre`
 
 The available method for sampling is 'circularized'::
@@ -243,8 +244,7 @@ The available method for sampling is 'circularized'::
 
 Initialize Off Set From Galactic Center
 ---------------------------------------
-:meth:`~astro_traj.sample.Sample.initialize_R`
-:meth:`~astro_traj.sample.Sample.sample_R`::
+We create a custom distribution to sample the intiial galactic offset of the pre second supernova system. The r_eff is used to control sampling at galactic offsets that are unrealistically far away from the center of the galaxy (i.e. we expect less binaries to form super far away from the galactic center and moreover some initial offsets may in fact be outside the plausible "diameter" of the galaxy. To initialize this PDF, we use :meth:`~astro_traj.sample.Sample.initialize_R`, to sample some number of outcomes from this PDF we use :meth:`~astro_traj.sample.Sample.sample_R`::
 
     >>> PDFR = samp.initialize_R()
     >>> R_dist = samp.sample_R(PDFR, Nsys) # (kpc)
@@ -288,7 +288,7 @@ Available methods include 'power', 'uniform', 'beniamini2'.
     >>> ECSPDFMhe = samp.initialize_Mhe(0.1)
     >>> CCSPDFMhe = samp.initialize_Mhe(1.0)
     >>> dumrand = np.random.uniform(0,1,size=Nsys)
-    >>> Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method='uniform', size=Nsys, PDF=PDFMhe, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
+    >>> Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method='uniform', size=Nsys, PDF=None, ECSPDF=ECSPDFMhe, CCSPDF=CCSPDFMhe, irand=dumrand) # (Msun)
 
 .. plot::
    :include-source:
@@ -402,6 +402,12 @@ Next, you randomly select an initial velocity direction :meth:`~astro_traj.syste
 Then based on Tmerge you solve an ODE and evolve XYZ until merger.
 :meth:`~astro_traj.system.System.doMotion`
 
+
+Check that conservation of energy is obeyed
+-------------------------------------------
+:meth:`~astro_traj.system.System.energy_check`
+Calculate the initial Energy of the system and the final energy and make sure it is conserved to within some small error (0.001)
+
 Checking Offset
 ===============
 Finally, You have a location for where in the galaxy your system merged. It is in XYZ so project onto XY plane and check if it matches to the observed off set (with some uncertainty in that offset accounted for).
@@ -470,3 +476,11 @@ And in the SN kick calculated here  the kick vector is set as follows:
 
     if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential' or self.sys_flag == 'radial_simple2' or self.sys_flag == 'tangential2':
         Vkx,Vky,Vkz=0,-Vkick,0
+
+
+*****************
+Backward Modeling
+*****************
+
+Backward modeling would be to say let us strt with a system of known quanity (i.e. observed offset and some T merge) and see if we can work backwards and retrieve our initial conditions.
+The assumptions made in the type of systems and the modeling of the velocity of the binary (F=ma), are simple enough that checks in the forward modeling such as conservation of energy are enough to ensure the sanity of the code.

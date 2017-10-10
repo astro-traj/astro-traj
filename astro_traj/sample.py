@@ -206,7 +206,9 @@ class Sample:
     # sample helium star mass
     def sample_Mhe(self, Mmin, Mmax=8.0, method='uniform', size=None,PDF=None,ECSPDF=None,CCSPDF=None,irand=None):
         '''
-        samples He-star mass uniformly between Mns and 8 Msun (BH limit)
+        samples He-star mass uniformly between Mns and 8 Msun (BH limit): beniamini2 method selects from two 
+        distributions ECS and CCSN. The split is based off the 60/40 split observed in double nurtron stars 
+        in our galaxy laid out in Fig 2: https://arxiv.org/pdf/1510.03111.pdf#figure.2 method: powerlaw
         '''
         
         if method=='beniamini':
@@ -251,7 +253,7 @@ class Sample:
     # sample kick velocities
     def sample_Vkick(self, scale=265, Vmin=0, Vmax=2500, method='maxwellian', size=None,Mhe=None,ECSPDF=None,CCSPDF=None,irand=None):
         '''
-        sample kick velocity from Maxwellian (Hobbs 2005, default) or uniformly (Wong 2010)
+        sample kick velocity from Maxwellian (Hobbs 2005, default) or uniformly (Wong 2010) or Beniamini (2016): https://arxiv.org/pdf/1510.03111.pdf#equation.4.7: beniamini2 method selects from two distributions ECS and CCSN. The splitis based off the 60/40 split observed in double nurtron stars in our galaxy laid out in Fig 2: https://arxiv.org/pdf/1510.03111.pdf#figure.2
         '''
         if method=='beniamini':
             Vkick_samp=[]

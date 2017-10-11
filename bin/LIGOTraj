@@ -88,8 +88,8 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     """
 
     print "\nInitializing galaxy and reading inputs..."
-    # set cosmology to Reiss [h = H0/(100 km/s/Mpc)]
-    h = 0.73
+    # set cosmology (Reiss=0.73, Planck=67.9) [h = H0/(100 km/s/Mpc)]
+    h = 0.679
     # Info from "GW"
     GW = constr_dict.GW(samples)
     # Info about the galaxy
@@ -164,6 +164,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         # Calculate angular resolution of the telescope, convert to physical size at the distance of merger
         theta = 1.22 * 1e-9 * tele['lambda'] / tele['D']
         D_theta = d*np.tan(theta)                          # units of Mpc
+        # for now, we hand-set the value of the offset uncertainty to a conservative number
         Galaxy['offset_uncer'] = 0.2   # offset uncertainty from angular resolution of telescope (kpc)
         if args.sys_flag=='tangential' or args.sys_flag=='radial_simple':
             Mns = 1.097

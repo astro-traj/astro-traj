@@ -1166,10 +1166,16 @@ class Plot:
 
             # plot location of supernova and kilonova
             ax.scatter(postSN.iloc[0]['x']*u.m.to(u.kpc), postSN.iloc[0]['y']*u.m.to(u.kpc), marker='*', color='r', s=50, label='$2^{nd}\ Supernova$', zorder=4)
-            ax.scatter(postSN.iloc[-1]['x']*u.m.to(u.kpc), postSN.iloc[-1]['y']*u.m.to(u.kpc), marker='*', color='y', s=100, label='$BNS\ Merger$', zorder=4)
-            xdir = (postSN.iloc[0]['vx']-preSN.iloc[-1]['vx'])/1e5
-            ydir = (postSN.iloc[0]['vy']-preSN.iloc[-1]['vy'])/1e5
-            ax.arrow(postSN.iloc[0]['x']*u.m.to(u.kpc), postSN.iloc[0]['y']*u.m.to(u.kpc), dx=xdir, dy=ydir, color='r', width=0.02, head_width=0.1, zorder=4)
+            ax.scatter(postSN.iloc[-1]['x']*u.m.to(u.kpc), postSN.iloc[-1]['y']*u.m.to(u.kpc), marker='X', color='r', s=100, label='$BNS\ Merger$', zorder=4)
+            xdir = (postSN.iloc[0]['vx']-preSN.iloc[-1]['vx'])
+            ydir = (postSN.iloc[0]['vy']-preSN.iloc[-1]['vy'])
+            xymag = np.sqrt(xdir**2 + ydir**2)
+            unit_vec = np.asarray([xdir/xymag, ydir/xymag, 0])
+            vk = dfi.iloc[0]['Vkick']
+            dx = vk*unit_vec[0]/100
+            dy = vk*unit_vec[1]/100
+            
+            ax.arrow(postSN.iloc[0]['x']*u.m.to(u.kpc), postSN.iloc[0]['y']*u.m.to(u.kpc), dx=dx, dy=dy, color='r', width=0.02, head_width=0.1, zorder=4)
             ax.scatter([0],[0], marker='x', color='r', s=30, zorder=4)  # plot galactic center
 
             # label & format
@@ -1190,18 +1196,18 @@ class Plot:
 
             # annotate with apre, vkick, mhe
             ax.annotate('$V_{kick} = %.1f\ km/s$\n$M_{He} = %.1f\ M_{\odot}$\n$A_{pre} = %.1f\ R_{\odot}$' % (dfi.iloc[0]['Vkick'],dfi.iloc[0]['Mhe'],dfi.iloc[0]['Apre']), xy=(-4.5,2.8), fontsize=12)
-            ax.annotate('$T_{delay} = %.2f\ Gyr$' % (dfi.iloc[0]['Tmerge']), xy=(-4.5,-4.5), fontsize=12)
+            ax.annotate('$T_{delay} = %.2f\ Gyr$' % (dfi.iloc[0]['Tmerge']), xy=(-4.5,-4.5), fontsize=10)
 
             if i == len(axs)-1:
                 ax.legend(loc='lower right', frameon=False, prop={'size': 12})
 
         # add colorbar
         pts = ax_cbar.scatter([-1],[-1],c=[0], vmin=vbounds[0], vmax=vbounds[1], cmap='viridis', alpha=1.0)
-        cbar = fig.colorbar(pts, cax=ax_cbar, ticks=[0.0,3.0], orientation='vertical')    
+        cbar = fig.colorbar(pts, cax=ax_cbar, orientation='vertical')    
         cbar.ax.tick_params(labelsize=20)
-        cbar.set_label(r'$Gyr$', labelpad=-10, fontsize=25)
+        cbar.set_label(r'$time\ (Gyr)$', labelpad=10, fontsize=25)
         ax_cbar.set_xlim(0,1)
         ax_cbar.set_ylim(0,1)
 
         plt.tight_layout(h_pad=0.1, w_pad=0.1)
-        plt.savefig('multipanel_traj.pdf', dpi=250)
+        plt.savefig('multipanel_traj.pdf', format='pdf', dpi=200)

@@ -89,8 +89,8 @@ The posterior method is used by default. This simply means that we draw samples 
     >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
-    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
-    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 2.8, 5, 0.679)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.679, rcut=100)
     >>> samp = Sample(gal)
     >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
@@ -140,8 +140,8 @@ The default method is median (i.e. the median value from the Gravitational Wave 
     >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
-    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
-    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 2.8, 5, 0.679)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.679, rcut=100)
     >>> samp = Sample(gal)
     >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
@@ -182,8 +182,8 @@ The available methods for sampling are 'uniform' and 'log'. This value is the pr
     >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
-    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
-    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 2.8, 5, 0.679)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.679, rcut=100)
     >>> samp = Sample(gal)
     >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
@@ -220,8 +220,8 @@ The available method for sampling is 'circularized'::
     >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
-    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
-    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 2.8, 5, 0.679)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.679, rcut=100)
     >>> samp = Sample(gal)
     >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
@@ -253,8 +253,8 @@ We create a custom distribution to sample the intiial galactic offset of the pre
     >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
-    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
-    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 2.8, 5, 0.679)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.679, rcut=100)
     >>> samp = Sample(gal)
     >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
@@ -293,8 +293,8 @@ Available methods include 'power', 'uniform', 'beniamini2'.
     >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
-    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
-    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 2.8, 5, 0.679)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.679, rcut=100)
     >>> samp = Sample(gal)
     >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
@@ -341,8 +341,8 @@ Available methods include 'maxwellian', 'uniform', 'beniamini2'.
     >>> font = {'size': 22}
 
     >>> samples = 'posterior_samples.dat'
-    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
-    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 2.8, 5, 0.679)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.679, rcut=100)
     >>> samp = Sample(gal)
     >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))
@@ -397,8 +397,8 @@ We utilize `Kalogera 1996 <http://iopscience.iop.org/article/10.1086/177974/meta
     >>> font = {'size': 16}
 
     >>> samples = 'posterior_samples.dat'
-    >>> Galaxy = constr_dict.galaxy('NGC', samples, 100, 5, 0.73)
-    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.73, rcut=100)
+    >>> Galaxy = constr_dict.galaxy('NGC', samples, 2.8, 5, 0.679)
+    >>> gal = Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], 0.679, rcut=100)
     >>> samp = Sample(gal)
     >>> Nsys = 1000
     >>> bins = int(np.round(np.sqrt(Nsys)))

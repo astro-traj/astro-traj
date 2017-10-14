@@ -88,7 +88,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
     """
 
     print "\nInitializing galaxy and reading inputs..."
-    # set cosmology (Reiss=0.73, Planck=67.9) [h = H0/(100 km/s/Mpc)]
+    # set cosmology (Riess=0.73, Planck=67.9) [h = H0/(100 km/s/Mpc)]
     h = 0.679
     # Info from "GW"
     GW = constr_dict.GW(samples)
@@ -104,7 +104,7 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
 
     # Create empty output file
     df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', \
-                                'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'flag'])
+                                'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'Vx_final', 'Vy_final', 'Vz_final', 'flag'])
     df.to_csv(args.outfile+'.dat', sep=',', index=False)
 
 

@@ -386,6 +386,10 @@ class System:
         self.Y = sol[:,4]
         self.Z = sol[:,5]
 
+        self.Vx_final=sol[-1,0]
+        self.Vy_final=sol[-1,1]
+        self.Vz_final=sol[-1,2]
+
         self.t = sol[:,6]
 
 
@@ -458,12 +462,18 @@ class System:
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
+            self.Vx_final=np.nan
+            self.Vy_final=np.nan
+            self.Vz_final=np.nan
         if self.flag == 2:
             self.vphi = np.nan
             self.vcosth = np.nan
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
             self.Vfinal = np.nan
+            self.Vx_final=np.nan
+            self.Vy_final=np.nan
+            self.Vz_final=np.nan
         if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential' or self.sys_flag == 'radial_simple2' or self.sys_flag == 'tangential2':
             self.vphi = np.nan
             self.vcosth = np.nan
@@ -473,12 +483,16 @@ class System:
             self.epost = np.nan
             self.R_proj=np.nan
             self.omega=np.nan
+            self.Vx_final=np.nan
+            self.Vy_final=np.nan
+            self.Vz_final=np.nan
 
         data = [self.M2*u.kg.to(u.M_sun), self.Mns*u.kg.to(u.M_sun), self.Mhe*u.kg.to(u.M_sun), \
                 self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, self.d*u.m.to(u.Mpc), \
                 self.R*u.m.to(u.kpc), self.R_proj*u.m.to(u.kpc), self.galcosth, self.galphi, \
                 self.Vkick*u.m.to(u.km), self.phi, self.costh, self.omega, self.vphi, self.vcosth, \
-                self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), self.Vfinal*u.m.to(u.km), self.flag]
+                self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), self.Vfinal*u.m.to(u.km), \
+                self.Vx_final*u.m.to(u.km), self.Vy_final*u.m.to(u.km), self.Vz_final*u.m.to(u.km), self.flag]
         return data
 
 

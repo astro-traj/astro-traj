@@ -505,11 +505,11 @@ class System:
         # save initial conditions
         initial = np.atleast_2d([self.Vkick,self.Mhe,self.Apre,self.Apost,self.Rmerge,self.Vxcirc0,self.Vycirc0,self.Vzcirc0])
         dfi = pd.DataFrame(initial, columns=['Vkick','Mhe','Apre','Apost','Rmerge','vx','vy','vz'])
-        dfi.to_csv('evolution/'+filename+'_ini.dat', index=False)        
+        dfi.to_csv('trajectories/'+filename+'_ini.dat', index=False)        
 
         # save evolution
         evolution = np.vstack([[self.t],[self.X],[self.Y],[self.Z],[self.Vx],[self.Vy],[self.Vz]]).T
         df = pd.DataFrame(evolution, columns=['t','x','y','z','vx','vy','vz'])
-        df.to_csv('evolution/'+filename+'.dat', index=False)
+        df.to_csv('trajectories/'+filename+'.dat', index=False)
 
 

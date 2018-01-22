@@ -66,7 +66,7 @@ def parse_commandline():
     parser.add_argument('--epre', type=str, default='circularized', help="Specify sampling procedure for initial eccentricity. Default=circularized")
     parser.add_argument('--distance', type=str, default='median', help="Specify sampling procedure for the distance. Default=median")
 
-    parser.add_argument('--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick. Default=delta_function")
+    parser.add_argument('--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick. Default=None")
     args = parser.parse_args()
 
     return args
@@ -157,6 +157,8 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         Vkick_dist=RV[1]
         
         
+    #FIXME handset binary parameters! We should make this a flag...
+    
     
     print "\nStarting the evolution of sampled binaries!"
     for R, d, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, d_dist, Mcomp_dist, Mns_dist, Apre_dist, epre_dist, Mhe_dist, Vkick_dist):
@@ -179,6 +181,19 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
             
         # initialize System class with pertinent parameters
         T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)
+        '''T = System(gal, R=0.935422, \
+                        Mns=1.329030, \
+                        M2=1.433028, \
+                        Mhe=6.465068, \
+                        Apre=5.104368, \
+                        epre=epre, \
+                        d=d, \
+                        Vkick=737.757136, \
+                        galphi=3.274058, \
+                        galcosth=0.941617, \
+                        omega=3.037751, \
+                        phi=3.431043, \
+                        costh=-0.922121)'''
         # implement a SN kick to the system, and check to see if binary is disrupted
         if T.sys_flag=='tangential' or T.sys_flag=='tangential2':
             if R>Galaxy['offset']:continue
@@ -260,6 +275,10 @@ def main(samples, galaxy_name, offset, r_eff, telescope):
         f = open(args.outfile+'.dat', 'a')
         f.write(str(outdata)[1:-1]+'\n')
         f.close()
+
+        # FIXME: save trajectories
+        if T.flag==1:
+            T.save_evolution(str(T.Vkick)[:3])
 
 
 

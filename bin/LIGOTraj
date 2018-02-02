@@ -131,7 +131,7 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
     print "\nSampling binary parameters..."
     
     # Sample NS masses (Msun)
-    Mcomp_dist, Mns_dist = samp.sample_masses(method=args.Mns_samp, samples, size=Nsys)
+    Mcomp_dist, Mns_dist = samp.sample_masses(args.Mns_samp, samples, size=Nsys)
 
     # Sample pre-SN SMA (Rsun)
     Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method=args.Apre, size=Nsys)
@@ -145,9 +145,9 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
     
     # Sample He-star mass (Msun)
     dumrand = np.random.uniform(0, 1, size=Nsys)   # needed if we do either of the B&P prescriptions
-    if args.MHe == 'beniamini_1pop'
+    if args.MHe == 'beniamini_1pop':
         PDFMhe = samp.initialize_Mhe(0.6)
-    elif args.MHe == 'beniamini_2pop'
+    elif args.MHe == 'beniamini_2pop':
         ECSN_PDFMhe = samp.initialize_Mhe(0.1)
         CCSN_PDFMhe = samp.initialize_Mhe(1.0)
     Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method=args.Mhe, size=Nsys, PDF=PDFMhe, ECSN_PDF=ECSN_PDFMhe, CCSN_PDF=CCSN_PDFMhe, irand=dumrand)

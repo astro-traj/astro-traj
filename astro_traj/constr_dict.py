@@ -79,8 +79,8 @@ def galaxy(r_eff, h, Mstellar=None, redshift=None, distance=None, galaxy_name=No
             'D1': 0.81,                         # major axis from 2MASS (arcmin)
             'D2': 0.73,                         # minor axis from 2MASS (arcmin)
             'redshift': 0.0,
-            'R_eff' = r_eff,
-            'distance' = distance
+            'R_eff': r_eff,
+            'distance': distance
         }
     }
 

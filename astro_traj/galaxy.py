@@ -34,17 +34,18 @@ __all__ = ['Galaxy_Models', 'Hernquist_NFW', 'Miyamoto_Nagai_NFW', 'Belczynski_2
 
 class Galaxy_Models(object):
 
-    def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, h, rcut):
+    def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, distance, h, rcut):
         """
         Galaxy class. Masses in Msun, distances in kpc. Immediately converted to SI.
         """
-        self.Mspiral = Mspiral*C.M_sun.value
-        self.Mbulge = Mbulge*C.M_sun.value
-        self.Mhalo = Mhalo*C.M_sun.value
-        self.R_eff = R_eff*C.kpc.value
+        self.Mspiral = Mspiral*u.Msun.to(u.kg)
+        self.Mbulge = Mbulge*u.Msun.to(u.kg)
+        self.Mhalo = Mhalo*u.Msun.to(u.kg)
+        self.R_eff = R_eff*u.kpc.to(u.m)
+        self.distance = distance*u.Mpc.to(u.m)
         self.h = h
         # distance at which we set the potential to drop to 0
-        self.rcut = rcut*C.kpc.value
+        self.rcut = rcut*u.kpc.to(u.m)
         self.G = C.G.value
 
 
@@ -138,9 +139,9 @@ class Hernquist_NFW(Galaxy_Models):
 
 
     """
-    def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, h, rcut):
+    def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, distance, h, rcut):
         # Shared galaxy params
-        Galaxy_Models.__init__(self, Mspiral, Mbulge, Mhalo, R_eff, h, rcut)
+        Galaxy_Models.__init__(self, Mspiral, Mbulge, Mhalo, R_eff, distance, h, rcut)
         # define parameters that are used in this model
         # relationship between R_effective and abulge from Hernquist 1990 (eq. 38)
         self.abulge = self.R_eff / 1.8153

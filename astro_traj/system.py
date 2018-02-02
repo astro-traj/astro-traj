@@ -41,7 +41,7 @@ class System:
     Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V
     
     """
-    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, d, Vkick, sys_flag=None, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
+    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, Vkick, sys_flag=None, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
         """ 
         #Masses in Msun, Apre in Rsun, Vkick in km/s, R in kpc
         #galphi,galcosth,omega, phi, costh (position, initial velocity, and kick angles) sampled randomly, unless specified (>-1)
@@ -61,7 +61,6 @@ class System:
         Apre = Apre*u.R_sun.to(u.m)
         Vkick = Vkick*u.km.to(u.m)
         R = R*u.kpc.to(u.m)
-        d = d*u.Mpc.to(u.m)
 
         self.sys_flag = sys_flag
         
@@ -126,7 +125,7 @@ class System:
         Vkx = Vkick*sinth*np.sin(phi)
         Vky = Vkick*costh
         Vkz = Vkick*sinth*np.cos(phi)
-        if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential' or self.sys_flag == 'radial_simple2' or self.sys_flag == 'tangential2':
+        if self.sys_flag in ['radial', 'tangential']:
             Vkx,Vky,Vkz=0,-Vkick,0
         #Eq 1, Kalogera 1996
         Vr = np.sqrt(G*(Mhe+M2)/Apre)
@@ -256,7 +255,7 @@ class System:
 
         """
         if self.sys_flag:
-            if self.sys_flag not in ['circ_test','vkick_test','radial_iso','radial_x','radial_simple','tangential','radial_simple2','tangential2']:
+            if self.sys_flag not in ['circ_test','vkick_test','radial_iso','radial_x','radial','tangential']:
                 raise ValueError("Unspecified flag '%s'" % self.sys_flag)
 
         X0,Y0,Z0 = self.X0, self.Y0, self.Z0
@@ -296,7 +295,7 @@ class System:
         #Rotate by omega while keeping perpendicular to R
         Vp_rot = (Vp*np.cos(omega)) + (np.cross(k,Vp)*np.sin(omega))
         Vp_rot_tot = np.sqrt((Vp[0]**2)+(Vp[1]**2)+(Vp[2]**2))
-        if self.sys_flag == 'tangential' or self.sys_flag== 'tangential2':
+        if self.sys_flag == 'tangential':
             vsys = [V_sys*Vp_rot[0]/Vp_rot_tot,V_sys*Vp_rot[1]/Vp_rot_tot,V_sys*Vp_rot[2]/Vp_rot_tot]
         Vx0,Vy0,Vz0 = Vp_rot + vsys
         if self.sys_flag =='radial_x':
@@ -474,7 +473,7 @@ class System:
             self.Vx_final=np.nan
             self.Vy_final=np.nan
             self.Vz_final=np.nan
-        if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential' or self.sys_flag == 'radial_simple2' or self.sys_flag == 'tangential2':
+        if self.sys_flag in ['radial', 'tangential']:
             self.vphi = np.nan
             self.vcosth = np.nan
             self.Rmerge_proj = np.nan

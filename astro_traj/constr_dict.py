@@ -20,56 +20,97 @@
 """
 
 from astropy.table import Table
+from astro_traj.HaloMassClass import relation
 import numpy as np
 
 __author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
 __credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
-def GW(filename_samples):
+def NS_masses(samples=None):
     """
-    Read in posterior samples and construct a dict of import params
+    Read in posterior samples and construct a dict of import params, or draw fiducial mass values
     """
 
-    GW = {}
-    samples_out = Table.read(filename_samples, format='ascii')
-    GW['m1'] = np.median(samples_out['m1_source'])
-    GW['m2'] = np.median(samples_out['m2_source'])
-    GW['m1_sigma'] = np.std(samples_out['m1_source'])
-    GW['m2_sigma'] = np.std(samples_out['m2_source'])
-    GW['d'] = np.median(samples_out['distance'])
+    NS = {}
+    gal_m1_mean = 1.4
+    gal_m1_sigma = 0.2
+    gal_m2_mean = 1.4
+    gal_m2_sigma = 0.2
+    if samples:
+        samples_out = Table.read(samples, format='ascii')
+        NS['m1'] = np.mean(samples_out['m1_source'])
+        NS['m2'] = np.mean(samples_out['m2_source'])
+        NS['m1_sigma'] = np.std(samples_out['m1_source'])
+        NS['m2_sigma'] = np.std(samples_out['m2_source'])
+    else:
+        NS['m1'] = gal_m1_mean
+        NS['m2'] = gal_m2_mean
+        NS['m1_sigma'] = gal_m1_sigma
+        NS['m2_sigma'] = gal_m2_sigma
 
-    return GW
+    return NS
 
 
-def galaxy(galaxy_name, filename_samples, r_eff, offset, h):
+def galaxy(r_eff, h, Mstellar=None, redshift=None, distance=None, galaxy_name=None):
     """
     Construct Galaxy dict
+    Can either provide galaxy_name, which holds specific properties about a single galaxy, 
+    or Mstellar and z/distance, from which we can use stellar mass/DM mass relation to construct dict
     """
 
-    # Dic of Galaxies containing dicts about properities
+    # First, make sure we have the necessary information
+    if not redshift and not distance:
+        raise ValueError("Must provide either redshift of luminosity distance!")
+    if not Mstellar and not galaxy_name:
+        raise ValueError("Must provide either stellar mass or name of galaxy!")
+    
+    # If redshift if provided, convert to distance
+    if redshift and not distance:
+        v_recc = c*((z+1)**2 - 1)/((z+1)**2+1)   # km/s
+        distance = v_recc / (100*h)   # Mpc
+
+    # Dict of Galaxies containing dicts about properities
     Galaxy_Dict = {
 
-        'NGC': {
+        'NGC4993': {
             'Mspiral': 0.0,                     # mass of the spiral (Msun) # NOTE: this information is not available, for now set to 0
             'Mbulge': (10**10.454)/h**2,        # Mstellar from 2MASS (Msun)
             'Mhalo': (10**12.2)/h,              # Mhalo from 2MASS (Msun)
             'D1': 0.81,                         # major axis from 2MASS (arcmin)
             'D2': 0.73,                         # minor axis from 2MASS (arcmin)
+            'redshift': 0.0,
+            'R_eff' = r_eff,
+            'distance' = distance
         }
     }
 
-    # Dic of Galaxies containing dicts about properities
-    Galaxy = Galaxy_Dict[galaxy_name]
-    Galaxy['R_eff'] = r_eff
-    Galaxy['offset'] = offset
+    # Dict containing properities of the host galaxy
+    if galaxy_name:
+        Galaxy = Galaxy_Dict[galaxy_name]
+    else:
+        Galaxy={}
+        Galaxy['Mbulge'] = Mstellar
+        Galaxy['redshift'] = redshift
+        Galaxy['distance'] = distance
+        Galaxy['R_eff'] = r_eff
+        Galaxy['Mhalo'] = relation.getMhalo(Mstellar, redshift)
 
     return Galaxy
 
 
-def telescope(telescope_name):
+def offset(offset, distance, offset_uncer=None, telescope_name=None):
     """
-    Determine D and lambda of a given telescope
+    Store offset and offset uncertainty in a dict. Can either use user inputs or
+    apporximate the uncertainty using telescope dict
+    NOTE: If telescope is specified, then the offset and offset uncertainty must be provided
+    in arcseconds. Otherwise, they should be provided in kpc. 
     """
+
+    # First, make sure we have the necessary information
+    if not offset_uncer and not telescope:
+        raise ValueError("Must provide either offset uncertainty in kpc or name of telescope from telescope_dict!")
+    if offset_uncer and telescope:
+        raise ValueError("Either specify the offset and offset uncertainty in kpc, or the offset in arcseconds and the name of the telescope you wish to use to calculate the offset uncertainty!")
 
     # Infer about the telescope that made the measurements (for angular resolution)
     telescope_dict = {
@@ -79,4 +120,18 @@ def telescope(telescope_name):
         }
     }
 
-    return telescope_dict[telescope_name]
+    # Dict containing properities of the host galaxy
+    Offset={}
+    if telescope_name:
+        telescope = telescope_dict[telescope_name]
+        offset = np.tan(206265*offset)*distance*units.Mpc.to(units.kpc)   # kpc
+        Offset['offset'] = offset
+        offset_uncer = distance*units.Mpc.to(units.kpc)*np.tan(1.22*tele['lambda']*units.nm.to(units.m) / tele['D'])
+        Offset['offset_uncer'] = offset_uncer 
+    else:
+        Offset['offset'] = offset
+        Offset['offset_uncer'] = offset_uncer
+
+    return Offset
+    
+

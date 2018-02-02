@@ -94,27 +94,33 @@ class BeniaminiMhe_pdf(rv_continuous):
             term1 = 1/(np.sqrt(2.0*np.pi)*self.sigdM*dM)
             term2 = np.exp(-(np.log(dM/self.dM0)**2)/(2.0*(self.sigdM**2)))
             return term1*term2 
+
+
 class Sample:
-    def __init__(self, gal):   # default rcut=0 does not truncate the distributions (i.e., they extend to infinity)
+    def __init__(self, NS, gal):   # default rcut=0 does not truncate the distributions (i.e., they extend to infinity)
         '''
         initialize with values passed to gal
+        NOTE: gal contains parameter values with SI units
         '''
-        self.abulge = gal.abulge / C.kpc.value
-        self.rcut = gal.rcut / C.kpc.value
+        self.abulge = gal.abulge * u.m.to(u.kpc)
+        self.rcut = gal.rcut * u.m.to(u.kpc)
+
+        self.m1 = NS['m1']
+        self.m2 = NS['m2']
+        self.m1_sigma = NS['m1_sigma']
+        self.m2_sigma = NS['m2_sigma']
 
 
     # sample compact binary masses from PE
-    def sample_masses(self, samples=None, method='posterior', size=None):
+    def sample_masses(self, method='gaussian', samples=None, size=None):
         """
         Samples m1 and m2 from posterior distrbution of your favorite PE run.
         Samples from the posterior samples by default. 
         Can specify methods 'gaussian', 'mean', or 'median' to sample using other sampling methods
         """
 
-        if not samples:
-            raise ValueError("No posterior sample file specified!")
-        
-        samples = Table.read(samples, format='ascii')
+        if samples:
+            samples = Table.read(samples, format='ascii')
 
         if method=='posterior':
             m1 = samples['m1_source'][np.random.randint(0,len(samples['m1_source']),size)]
@@ -122,8 +128,8 @@ class Sample:
             return m1, m2
 
         elif method=='mean':
-            m1 = np.ones(size)*samples['m1_source'].mean()
-            m2 = np.ones(size)*samples['m2_source'].mean()
+            m1 = sefl.m1
+            m2 = self.m2
             return m1, m2
 
         elif method=='median':
@@ -132,8 +138,8 @@ class Sample:
             return m1, m2
 
         elif method=='gaussian':
-            m1 = np.random.normal(np.median(samples['m1_source']), samples['m1_source'].std(), size)
-            m2 = np.random.normal(np.median(samples['m2_source']), samples['m2_source'].std(), size)
+            m1 = np.random.normal(self.m1, self.m1_sigma, size)
+            m2 = np.random.normal(self.m2, self.m2_sigma, size)
             return m1, m2
 
         else: 
@@ -204,26 +210,19 @@ class Sample:
 
 
     # sample helium star mass
-    def sample_Mhe(self, Mmin, Mmax=8.0, method='uniform', size=None,PDF=None,ECSPDF=None,CCSPDF=None,irand=None):
+    def initialize_Mhe(self,dM0):
+        return BeniaminiMhe_pdf(dM0,a=0)
+    def sample_Mhe(self, Mmin, Mmax=3.0, method='uniform', size=None, PDF=None, ECSPDF=None, CCSPDF=None, irand=None):
         '''
         samples He-star mass uniformly between Mns and 8 Msun (BH limit): beniamini2 method selects from two 
         distributions ECS and CCSN. The split is based off the 60/40 split observed in double nurtron stars 
         in our galaxy laid out in Fig 2: https://arxiv.org/pdf/1510.03111.pdf#figure.2 method: powerlaw
         '''
         
-        if method=='beniamini':
-            dMhe_samp = PDF.rvs(size=size)
-            return dMhe_samp+Mmin
-        if method=='beniamini2':
-            dMhe_samp = []
-            for i in range(size):
-                if irand[i]<0.6:
-                    dMhe_samp.append(ECSPDF.rvs())
-                else:
-                    dMhe_samp.append(CCSPDF.rvs())
-            return np.array(dMhe_samp)+Mmin
-        
-                
+        if method=='uniform':
+            Mhe_samp = np.random.uniform(Mmin, Mmax, size=size)
+            return Mhe_samp
+
         if method=='power':
             Mhe_samp=[]
             
@@ -241,35 +240,48 @@ class Sample:
                 Mhe_samp.append(invpdf(II,Mmin[i]))
             return np.array(Mhe_samp)
             
+        if method=='beniamini_1pop':
+            dMhe_samp = PDF.rvs(size=size)
+            return dMhe_samp+Mmin
 
-        if method=='uniform':
-            Mhe_samp = np.random.uniform(Mmin, Mmax, size=size)
-            return Mhe_samp
-
+        if method=='beniamini_2pop':
+            dMhe_samp = []
+            for i in range(size):
+                if dumrand[i]<0.6:
+                    dMhe_samp.append(ECSPDF.rvs())
+                else:
+                    dMhe_samp.append(CCSPDF.rvs())
+            return np.array(dMhe_samp)+Mmin
+        
         else: 
             raise ValueError("Undefined sampling method: %s" % method)
 
 
     # sample kick velocities
-    def sample_Vkick(self, scale=265, Vmin=0, Vmax=2500, method='maxwellian', size=None,Mhe=None,ECSPDF=None,CCSPDF=None,irand=None):
+    def initialize_Vkick(self):
+        ECSN = BeniaminiKick_pdf(5.0,a=0)
+        CCSN = BeniaminiKick_pdf(158.0,a=0)
+        return ECSN, CCSN
+    def sample_Vkick(self, scale=265, Vmin=0, Vmax=2000, method='maxwellian', size=None, Mhe=None, ECSN_PDF=None, CCSN_PDF=None, irand=None):
         '''
         sample kick velocity from Maxwellian (Hobbs 2005, default) or uniformly (Wong 2010) or Beniamini (2016): https://arxiv.org/pdf/1510.03111.pdf#equation.4.7: beniamini2 method selects from two distributions ECS and CCSN. The splitis based off the 60/40 split observed in double nurtron stars in our galaxy laid out in Fig 2: https://arxiv.org/pdf/1510.03111.pdf#figure.2
         '''
-        if method=='beniamini':
+        if method=='beniamini_1pop':
             Vkick_samp=[]
             for i in range(len(Mhe)):
                 if Mhe[i]<=2.25:
-                    Vkick_samp.append(ECSPDF.rvs())
+                    Vkick_samp.append(ECSN_PDF.rvs())
                 else:
-                    Vkick_samp.append(CCSPDF.rvs())
+                    Vkick_samp.append(CCSN_PDF.rvs())
             return np.array(Vkick_samp)
-        if method=='beniamini2':
+
+        if method=='beniamini_2pop':
             Vkick_samp=[]
             for i in range(len(irand)):
                 if irand[i]<=0.6:
-                    Vkick_samp.append(ECSPDF.rvs())
+                    Vkick_samp.append(ECSN_PDF.rvs())
                 else:
-                    Vkick_samp.append(CCSPDF.rvs())
+                    Vkick_samp.append(CCSN_PDF.rvs())
             return np.array(Vkick_samp)
                     
             
@@ -283,19 +295,16 @@ class Sample:
 
         else: 
             raise ValueError("Undefined sampling method: %s" % method)
-    def initialize_Mhe(self,dM0):
-        return BeniaminiMhe_pdf(dM0,a=0)
-    def initialize_Vkick(self):
-        ECS = BeniaminiKick_pdf(5.0,a=0)
-        CCS = BeniaminiKick_pdf(158.0,a=0)
-        return ECS,CCS
+
+
+    # Sample distance from galaxy center
     def initialize_R(self):
         '''
         samples radial distance from galactic center according to specified potential function
         '''
 
         if self.rcut == 0:
-            return Hernquist_pdf(abulge=self.abulge, rcut=self.rcut, a=0,name='my_pdf')
+            return Hernquist_pdf(abulge=self.abulge, rcut=self.rcut, a=0, name='my_pdf')
         else:
             return Hernquist_pdf(abulge=self.abulge, rcut=self.rcut, a=0, b=self.rcut, name='my_pdf')
 
@@ -305,3 +314,6 @@ class Sample:
         samples radial distance from galactic center according to specified potential function
         '''
         return PDF.rvs(size=Ndraws)
+
+
+

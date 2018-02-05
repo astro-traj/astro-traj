@@ -21,6 +21,8 @@
 
 from astropy.table import Table
 from astro_traj.HaloMassClass import relation
+import astropy.units as units
+import astropy.constants as constants
 import numpy as np
 
 __author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
@@ -32,10 +34,10 @@ def NS_masses(samples=None):
     """
 
     NS = {}
-    gal_m1_mean = 1.4
-    gal_m1_sigma = 0.2
-    gal_m2_mean = 1.4
-    gal_m2_sigma = 0.2
+    gal_m1_mean = 1.33
+    gal_m1_sigma = 0.09
+    gal_m2_mean = 1.33
+    gal_m2_sigma = 0.09
     if samples:
         samples_out = Table.read(samples, format='ascii')
         NS['m1'] = np.mean(samples_out['m1_source'])
@@ -51,7 +53,7 @@ def NS_masses(samples=None):
     return NS
 
 
-def galaxy(r_eff, h, Mstellar=None, redshift=None, distance=None, galaxy_name=None):
+def galaxy(r_eff, h, stellar_mass=None, redshift=None, distance=None, galaxy_name=None):
     """
     Construct Galaxy dict
     Can either provide galaxy_name, which holds specific properties about a single galaxy, 
@@ -61,12 +63,13 @@ def galaxy(r_eff, h, Mstellar=None, redshift=None, distance=None, galaxy_name=No
     # First, make sure we have the necessary information
     if not redshift and not distance:
         raise ValueError("Must provide either redshift of luminosity distance!")
-    if not Mstellar and not galaxy_name:
+    if not stellar_mass and not galaxy_name:
         raise ValueError("Must provide either stellar mass or name of galaxy!")
     
     # If redshift if provided, convert to distance
     if redshift and not distance:
-        v_recc = c*((z+1)**2 - 1)/((z+1)**2+1)   # km/s
+        c = constants.c.value * units.m.to(units.km) 
+        v_recc = c*((redshift+1)**2 - 1)/((redshift+1)**2+1)   # km/s
         distance = v_recc / (100*h)   # Mpc
 
     # Dict of Galaxies containing dicts about properities
@@ -89,11 +92,15 @@ def galaxy(r_eff, h, Mstellar=None, redshift=None, distance=None, galaxy_name=No
         Galaxy = Galaxy_Dict[galaxy_name]
     else:
         Galaxy={}
-        Galaxy['Mbulge'] = Mstellar
+        Galaxy['Mspiral'] = 0.0
+        Galaxy['Mbulge'] = 10**stellar_mass
         Galaxy['redshift'] = redshift
         Galaxy['distance'] = distance
         Galaxy['R_eff'] = r_eff
-        Galaxy['Mhalo'] = relation.getMhalo(Mstellar, redshift)
+        mstar_mhalo = relation(version='new')
+        Galaxy['Mhalo'] = mstar_mhalo.getMhalo(stellar_mass, redshift)
+        # FIXME: this doesn't seem right, check with Chase
+        Galaxy['Mhalo'] = 10*Galaxy['Mbulge']
 
     return Galaxy
 
@@ -107,9 +114,9 @@ def offset(offset, distance, offset_uncer=None, telescope_name=None):
     """
 
     # First, make sure we have the necessary information
-    if not offset_uncer and not telescope:
+    if not offset_uncer and not telescope_name:
         raise ValueError("Must provide either offset uncertainty in kpc or name of telescope from telescope_dict!")
-    if offset_uncer and telescope:
+    if offset_uncer and telescope_name:
         raise ValueError("Either specify the offset and offset uncertainty in kpc, or the offset in arcseconds and the name of the telescope you wish to use to calculate the offset uncertainty!")
 
     # Infer about the telescope that made the measurements (for angular resolution)

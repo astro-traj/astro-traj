@@ -212,7 +212,7 @@ class Sample:
     # sample helium star mass
     def initialize_Mhe(self,dM0):
         return BeniaminiMhe_pdf(dM0,a=0)
-    def sample_Mhe(self, Mmin, Mmax=3.0, method='uniform', size=None, PDF=None, ECSPDF=None, CCSPDF=None, irand=None):
+    def sample_Mhe(self, Mmin, Mmax=3.0, method='uniform', size=None, PDF=None, ECSN_PDF=None, CCSN_PDF=None, irand=None):
         '''
         samples He-star mass uniformly between Mns and 8 Msun (BH limit): beniamini2 method selects from two 
         distributions ECS and CCSN. The split is based off the 60/40 split observed in double nurtron stars 

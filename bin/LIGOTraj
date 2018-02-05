@@ -56,29 +56,30 @@ def parse_commandline():
     parser.add_argument('-T', '--trials', type=int, default=1, help="Specify the number of trials. Default=1")
     parser.add_argument('-F', '--outfile', type=str, default='output', help="Name of the output file. Default=output")
     parser.add_argument('-SF', '--sys-flag', type=str, default=None, help="Specify a flag for testing aspects of the orbital evolution. Current options: 'circ_test' for setting the kick velocity to 0 and checking that the galactic orbits are circular; 'vkick_test' for setting the galactic orbital velocity to 0 and seeing the affect of just the SN kick. Default=None")
+    parser.add_argument('-ST', '--save-trajectories', action="store_true", help="Use this flag to save the trajcetories of successful binaries for plotting and animation purposes. Default is None")
 
     # data information
     parser.add_argument('-o', '--offset', type=float, help="Offset from center of galaxy of event. In kpc, unless telescope is specified, then in arcseconds", required=True)
-    parser.add_argument('-oe', '--offset-uncer', type=float, help="Standard uncertainty on the offset measurement. In kpc, unless telescope is specified, then in arcseconds")
+    parser.add_argument('-oe', '--offset-uncer', type=float, default=None, help="Standard uncertainty on the offset measurement. In kpc, unless telescope is specified, then in arcseconds. Default=None")
     parser.add_argument('-r', '--effective-radius', type=float, help="Effective radius (kpc)", required=True)
-    parser.add_argument('-m', '--stellar-mass', type=float, default=None, help="Stellar Mass (log Msun)")
-    parser.add_argument('-z', '--redshift', type=float, default=None, help="Redshift")
-    parser.add_argument('-d', '--distance', type=float, default=None, help="Distance to the galaxy (Mpc)")
+    parser.add_argument('-m', '--stellar-mass', type=float, default=None, help="Stellar Mass (log Msun). Default=None")
+    parser.add_argument('-z', '--redshift', type=float, default=None, help="Redshift. Default=None")
+    parser.add_argument('-d', '--distance', type=float, default=None, help="Distance to the galaxy (Mpc). Default=None")
     parser.add_argument('-g', '--galaxy', type=str, default=None, help="Name of galaxy that is pulled from the dictionaries in constr_dict.py. Default=None")
     parser.add_argument('-t', '--telescope', type=str, default=None, help="Name of telescope in dictionaries in constr_dict.py from which offset and offset uncertainty are calculated. Default=None")
-    parser.add_argument('-s', '--samples', help="Path to posterior samples")
+    parser.add_argument('-s', '--samples', help="Path to posterior samples. Default=None")
 
     # sampling information
     parser.add_argument('--Apre_samp', type=str, default='uniform', help="Specify sampling procedure for initial semi-major axis. Default=uniform")
     parser.add_argument('--Mhe_samp', type=str, default='uniform', help="Specify sampling procedure for helium star mass. Default=uniform")
     parser.add_argument('--Vkick_samp', type=str, default='maxwellian', help="Specify sampling procedure for kick velocity. Default=maxwellian")
-    parser.add_argument('--Mns_samp', type=str, default='galactic', help="Specify sampling procedure for NS masses, Can use posteriors from GW observations or draw from a distribtuion tuned to the properties tuned to galactic DNS systems. Default=galactic")
+    parser.add_argument('--Mns_samp', type=str, default='gaussian', help="Specify sampling procedure for NS masses, Can use posteriors from GW observations (if you provide valid) samples argumentor or draw from a distribtuion tuned to the properties tuned to galactic DNS systems. Default=gaussian")
     parser.add_argument('--epre_samp', type=str, default='circularized', help="Specify sampling procedure for initial eccentricity. Default=circularized")
     args = parser.parse_args()
 
     return args
 
-def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, distance=None, samples=None, galaxy_name=None):
+def main(offset, offset_uncer, r_eff, stellar_mass, redshift, distance, samples, galaxy_name, telescope):
     """
     Main function. Samples parameters, implements kicks, and sees whether the systems is a 'successful' merger
     by merging at the proper projected distance.
@@ -89,9 +90,9 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
     Flag descriptions:
     0: Binary doesn't merge at the proper projected distance
     1: Binary mergers at the correct projected distance
-    2: Binary's inspiral time is greater than 10 Gyr, does not evolve
+    2: Binary's inspiral time is greater than 14 Gyr, does not evolve
     3: Binary is disrupted by SN kick
-    4: Energy conservation requirement not met!!!
+    4: Energy conservation requirement not met
     """
 
     print "\nInitializing galaxy and reading inputs..."
@@ -103,11 +104,10 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
     NS = constr_dict.NS_masses(samples)
 
     # Info about the galaxy, either from galaxy dict or user input
-    Galaxy = constr_dict.galaxy(r_eff, h, Mstellar, redshift, distance, galaxy_name)
+    Galaxy = constr_dict.galaxy(r_eff, h, stellar_mass=stellar_mass, redshift=redshift, distance=distance, galaxy_name=galaxy_name)
 
     # Uncertainty in the offset measurement, either measured or derived from angular resolution of telescope
     Offset = constr_dict.offset(offset, distance, offset_uncer, telescope)
-
 
     # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
     gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], Galaxy['distance'], h, rcut=30)
@@ -116,7 +116,8 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
 
 
     # Create empty output file
-    df = pd.DataFrame([], columns=['M2', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', 'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'Vx_final', 'Vy_final', 'Vz_final', 'flag'])
+    output_columns=['Mcomp', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', 'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'Vx_final', 'Vy_final', 'Vz_final', 'flag']
+    df = pd.DataFrame([], columns=output_columns)
     df.to_csv(args.outfile+'.dat', sep=',', index=False)
 
 
@@ -134,10 +135,10 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
     Mcomp_dist, Mns_dist = samp.sample_masses(args.Mns_samp, samples, size=Nsys)
 
     # Sample pre-SN SMA (Rsun)
-    Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method=args.Apre, size=Nsys)
+    Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method=args.Apre_samp, size=Nsys)
 
     # Sample pre-SN eccentricity (dimensionless)
-    epre_dist = samp.sample_epre(method=args.epre, size=Nsys)
+    epre_dist = samp.sample_epre(method=args.epre_samp, size=Nsys)
 
     # Sample galactic radius of SN2 (kpc)
     PDFR = samp.initialize_R()
@@ -145,16 +146,17 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
     
     # Sample He-star mass (Msun)
     dumrand = np.random.uniform(0, 1, size=Nsys)   # needed if we do either of the B&P prescriptions
-    if args.MHe == 'beniamini_1pop':
+    PDFMhe, ECSN_PDFMhe, CCSN_PDFMhe = None, None, None
+    if args.Mhe_samp == 'beniamini_1pop':
         PDFMhe = samp.initialize_Mhe(0.6)
-    elif args.MHe == 'beniamini_2pop':
+    elif args.Mhe_samp == 'beniamini_2pop':
         ECSN_PDFMhe = samp.initialize_Mhe(0.1)
         CCSN_PDFMhe = samp.initialize_Mhe(1.0)
-    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist, method=args.Mhe, size=Nsys, PDF=PDFMhe, ECSN_PDF=ECSN_PDFMhe, CCSN_PDF=CCSN_PDFMhe, irand=dumrand)
+    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist.min(), method=args.Mhe_samp, size=Nsys, PDF=PDFMhe, ECSN_PDF=ECSN_PDFMhe, CCSN_PDF=CCSN_PDFMhe, irand=dumrand)
 
     # Sample SN kick velocity
     ECSN, CCSN = samp.initialize_Vkick()
-    Vkick_dist = samp.sample_Vkick(method=args.Vkick, size=Nsys, ECSN_PDF=ECSN, CCSN_PDF=CCSN, Mhe=Mhe_dist, irand=dumrand)
+    Vkick_dist = samp.sample_Vkick(method=args.Vkick_samp, size=Nsys, ECSN_PDF=ECSN, CCSN_PDF=CCSN, Mhe=Mhe_dist, irand=dumrand)
 
 
     # If we are doing radial or tangential tests to get min velocity, we sample R and Vkick on a grid
@@ -222,9 +224,6 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
                 
             
 
-        # NOTE: I'M HERE!!!
-        # FIXME: make output headers into list, or find a new way to do the file writing...
-            
         # implement a SN kick to the system, and check to see if binary is disrupted
         T.SN()
         # if binary is disrupted, move on to next system
@@ -264,8 +263,7 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
         f.write(str(outdata)[1:-1]+'\n')
         f.close()
 
-        # FIXME: save trajectories
-        if T.flag==1:
+        if (T.flag==1 and args.save_trajectories==True):
             T.save_evolution(str(T.Vkick)[:3])
 
 
@@ -280,4 +278,5 @@ def main(r_eff, offset, offset_uncertainty, stellar_mass=None, redshift=None, di
 
 if __name__ == '__main__':
     args = parse_commandline()
-    main(args.samples, args.galaxy, args.offset, args.effective_radius, args.telescope)
+    main(args.offset, args.offset_uncer, args.effective_radius, args.stellar_mass, args.redshift, args.distance, args.samples, args.galaxy, args.telescope)
+

@@ -17,7 +17,7 @@
 # along with astro-traj.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Places system described by Mhe, M2, Apre, epre and position r(R,galphi,galcosth) in galaxy model gal
+Places system described by Mhe, Mcomp, Apre, epre and position r(R,galphi,galcosth) in galaxy model gal
 Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V    
 """
 
@@ -36,18 +36,18 @@ __all__ = ['System']
 
 class System:
     """
-    Places system described by Mhe, M2, Apre, epre and position r(R,galphi,galcosth) in galaxy model gal
+    Places system described by Mhe, Mcomp, Apre, epre and position r(R,galphi,galcosth) in galaxy model gal
 
     Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V
     
     """
-    def __init__(self, gal, R, Mns, M2, Mhe, Apre, epre, Vkick, sys_flag=None, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
+    def __init__(self, gal, R, Mns, Mcomp, Mhe, Apre, epre, Vkick, sys_flag=None, galphi=None, galcosth=None, omega=None, phi=None, costh=None):
         """ 
         #Masses in Msun, Apre in Rsun, Vkick in km/s, R in kpc
         #galphi,galcosth,omega, phi, costh (position, initial velocity, and kick angles) sampled randomly, unless specified (>-1)
         #galphi, galcosth correspond to azimuthal and polar angles -- respectively --  in the galactic frame
         #phi, costh are defined in comments of SN:
-        #   theta: angle between preSN He core velocity relative to M2 (i.e. the positive y axis) and the kick velocity
+        #   theta: angle between preSN He core velocity relative to Mcomp (i.e. the positive y axis) and the kick velocity
         #   phi: angle between Z axis and projection of kick onto X-Z plane
         #omega: angle between the galactic velocity corresponding to a circular orbit in the r-z plane and
         #the actual galactic velocity preSN corresponding to a circular orbit
@@ -56,7 +56,7 @@ class System:
     
         # Convert inputs to SI
         Mhe = Mhe*u.M_sun.to(u.kg)
-        M2 = M2*u.M_sun.to(u.kg)
+        Mcomp = Mcomp*u.M_sun.to(u.kg)
         Mns = Mns*u.M_sun.to(u.kg)
         Apre = Apre*u.R_sun.to(u.m)
         Vkick = Vkick*u.km.to(u.m)
@@ -79,8 +79,9 @@ class System:
         if omega: self.omega = omega
         else: self.omega = np.random.uniform(0,2*np.pi)
 
-        self.Mhe, self.M2, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R, self.d = Mhe, M2, Mns, Apre, epre, Vkick, gal, R, d
+        self.Mhe, self.Mcomp, self.Mns, self.Apre, self.epre, self.Vkick, self.gal, self.R = Mhe, Mcomp, Mns, Apre, epre, Vkick, gal, R
         self.Vdot = gal.Vdot
+        self.distance = gal.distance
 
         # Get projection of R in the x-y plane to save later into output file
         x_R = self.R*np.sin(np.arccos(self.galcosth))*np.cos(self.galphi)
@@ -91,12 +92,12 @@ class System:
     def SN(self):
         """
         
-        Mhe lies on origin moving in direction of positive y axis, M2 on negative X axis, Z completes right-handed coordinate system
+        Mhe lies on origin moving in direction of positive y axis, Mcomp on negative X axis, Z completes right-handed coordinate system
         
-        theta: angle between preSN He core velocity relative to M2 (i.e. the positive y axis) and the kick velocity
+        theta: angle between preSN He core velocity relative to Mcomp (i.e. the positive y axis) and the kick velocity
         phi: angle between Z axis and projection of kick onto X-Z plane
         
-        Vr is velocity of preSN He core relative to M2, directed along the positive y axis
+        Vr is velocity of preSN He core relative to Mcomp, directed along the positive y axis
 
         Vkick is kick velocity with components Vkx, Vky, Vkz in the above coordinate system
         V_sys is the resulting center of mass velocity of the system IN THE TRANSLATED COM FRAME, imparted by the SN
@@ -113,14 +114,14 @@ class System:
         self.flag=0      # set standard flag        
 
         G = C.G.value
-        Mhe, M2, Mns, Apre, Vkick, costh, phi = self.Mhe, self.M2, self.Mns, self.Apre, self.Vkick, self.costh, self.phi
+        Mhe, Mcomp, Mns, Apre, Vkick, costh, phi = self.Mhe, self.Mcomp, self.Mns, self.Apre, self.Vkick, self.costh, self.phi
 
 
         sinth = np.sqrt(1-(costh**2))
-        #Mhe lies on origin moving in direction of positive y axis, M2 on negative X axis, Z completes right-handed coordinate system
+        #Mhe lies on origin moving in direction of positive y axis, Mcomp on negative X axis, Z completes right-handed coordinate system
         #See Fig 1 in Kalogera 1996
 
-        # theta: angle between preSN He core velocity relative to M2 (i.e. the positive y axis) and the kick velocity
+        # theta: angle between preSN He core velocity relative to Mcomp (i.e. the positive y axis) and the kick velocity
         # phi: angle between Z axis and projection of kick onto X-Z plane
         Vkx = Vkick*sinth*np.sin(phi)
         Vky = Vkick*costh
@@ -128,8 +129,8 @@ class System:
         if self.sys_flag in ['radial', 'tangential']:
             Vkx,Vky,Vkz=0,-Vkick,0
         #Eq 1, Kalogera 1996
-        Vr = np.sqrt(G*(Mhe+M2)/Apre)
-        Mtot=Mns+M2
+        Vr = np.sqrt(G*(Mhe+Mcomp)/Apre)
+        Mtot=Mns+Mcomp
 
         #Eqs 3 and 4, Kalogera 1996
         Apost = ((2.0/Apre) - (((Vkick**2)+(Vr**2)+(2*Vky*Vr))/(G*Mtot)))**-1
@@ -137,7 +138,7 @@ class System:
         epost = np.sqrt(1-x)
         # Eq 34, Kalogera 1996
         VSx = Mns*Vkx/Mtot
-        VSy = (1.0/Mtot)*((Mns*Vky)-((Mhe-Mns)*M2*Vr/(Mhe+M2)))
+        VSy = (1.0/Mtot)*((Mns*Vky)-((Mhe-Mns)*Mcomp*Vr/(Mhe+Mcomp)))
         VSz = Mns*Vkz/Mtot
         V_sys = np.sqrt((VSx**2)+(VSy**2)+(VSz**2))
 
@@ -156,10 +157,10 @@ class System:
             V_He;preSN is the same variable as V_r from Kalogera 1996
             
             """
-            Mhe, M2, Mns, Apre, Apost, epost, Vr, Vkick = self.Mhe, self.M2, self.Mns, self.Apre, self.Apost, self.epost, self.Vr, self.Vkick
+            Mhe, Mcomp, Mns, Apre, Apost, epost, Vr, Vkick = self.Mhe, self.Mcomp, self.Mns, self.Apre, self.Apost, self.epost, self.Vr, self.Vkick
             #Equation numbers and quotes in comments correspond to Willems et al. 2002 paper on J1655.
-            Mtot_pre = Mhe + M2
-            Mtot_post = Mns + M2
+            Mtot_pre = Mhe + Mcomp
+            Mtot_post = Mns + Mcomp
 
             # SNflag1: eq 21 (with typo fixed). Continuity demands Post SN orbit must pass through preSN positions.
             #from Flannery & Van Heuvel 1975                                                             
@@ -189,7 +190,7 @@ class System:
                 tmp1 = kvar**2 * Mtot_post * (Apre/Apost)
                 tmp2 = 2 * (Apost/Apre)**2 * (1-epost**2) - kvar
                 tmp3 = - 2 * (Apost/Apre) * np.sqrt(1-epost**2) * np.sqrt((Apost/Apre)**2 * (1-epost**2) - kvar)
-                prgmax = -M2 + tmp1 / (tmp2 + tmp3)
+                prgmax = -Mcomp + tmp1 / (tmp2 + tmp3)
 
                 self.SNflag4 = Mhe <= prgmax
             # FIX ME: additionally, Kalogera 1996 mentions requirement that NS stars don't collide
@@ -317,11 +318,11 @@ class System:
         self.vcosth=vcosth
         self.vsinth=vsinth
 
-    def setTmerge(self, Tmin=0.0, Tmax=10.0): #NOTE we should check that this matches up with Maggiori equations
+    def setTmerge(self, Tmin=0.0, Tmax=14.0): #NOTE we should check that this matches up with Maggiori equations
         """ 
         Calculate the inspiral time for the binary after the supernova using formulae from `Peters 1964 <https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224>`_
         """
-        m1=self.Mns; m2=self.M2
+        m1=self.Mns; m2=self.Mcomp
         G = C.G.value; c = C.c.value
 
         # useful definition for following equations:
@@ -340,9 +341,9 @@ class System:
         self.Tmerge = Tmerge
 
         # see if binary inspiral time is longer than threshold (10 Gyr) or shorter than minimum time (0 for now)
-        Tmin = Tmin*1e9         # years
-        Tmax = Tmax*1e9         # years
-        if (Tmerge > Tmax * u.year.to(u.s) or Tmerge < Tmin * u.year.to(u.s)):
+        Tmin = Tmin*u.Gyr.to(u.s)         # seconds
+        Tmax = Tmax*u.Gyr.to(u.s)         # seconds
+        if (Tmerge > Tmax or Tmerge < Tmin):
             self.flag=2   # binary does not meet inspiral time requirements
 
 
@@ -421,7 +422,7 @@ class System:
         Mhalo = self.gal.Mhalo
         Mbulge = self.gal.Mbulge
         abulge = self.gal.abulge
-        Mns, M2 = self.Mns, self.M2
+        Mns, Mcomp = self.Mns, self.Mcomp
         G = C.G.value
         Ubulge = self.gal.Ubulge
         Uhalo = self.gal.Uhalo
@@ -430,13 +431,13 @@ class System:
         rf = np.sqrt(self.X[-1]**2 + self.Y[-1]**2 + self.Z[-1]**2)
 
 
-        Eki = 0.5 * (Mns + M2) * (self.Vx[0]**2 + self.Vy[0]**2 + self.Vz[0]**2)
-        Epi = (Mns+M2)*(Uhalo(ri)+Ubulge(ri))  #Uhalo and Ubulge are really Uhalo/Msys and Ubulge/Msys
+        Eki = 0.5 * (Mns + Mcomp) * (self.Vx[0]**2 + self.Vy[0]**2 + self.Vz[0]**2)
+        Epi = (Mns+Mcomp)*(Uhalo(ri)+Ubulge(ri))  #Uhalo and Ubulge are really Uhalo/Msys and Ubulge/Msys
 
         Ei = Eki+Epi
 
-        Ekf = 0.5 * (Mns + M2) * (self.Vx[-1]**2 + self.Vy[-1]**2 + self.Vz[-1]**2)
-        Epf = (Mns+M2)*(Uhalo(rf)+Ubulge(rf))  #Uhalo and Ubulge are really Uhalo/Msys and Ubulge/Msys
+        Ekf = 0.5 * (Mns + Mcomp) * (self.Vx[-1]**2 + self.Vy[-1]**2 + self.Vz[-1]**2)
+        Epf = (Mns+Mcomp)*(Uhalo(rf)+Ubulge(rf))  #Uhalo and Ubulge are really Uhalo/Msys and Ubulge/Msys
 
         Ef = Ekf+Epf
 
@@ -450,8 +451,8 @@ class System:
 
     def write_data(self):
         """
-        # [M2, Mns, Mhe, Apre, Apost, epre, epost, d, R, galcosth, galphi, Vkick, Tmerge, Rmerge, Rmerge_proj, Vfinal, flag]
-        # write things in reasonable units (e.g., Msun, kpc, km/s ...)
+        # [Mcomp, Mns, Mhe, Apre, Apost, epre, epost, d, R, galcosth, galphi, Vkick, Tmerge, Rmerge, Rmerge_proj, Vfinal, flag]
+        # write things in "reasonable" units (e.g., Msun, kpc, km/s ...)
         """
         # in case we wish to save data from other flagged binaries, fill in the blank information with nans
         if self.flag == 3:
@@ -486,18 +487,38 @@ class System:
             self.Vy_final=np.nan
             self.Vz_final=np.nan
 
-        data = [self.M2*u.kg.to(u.M_sun), self.Mns*u.kg.to(u.M_sun), self.Mhe*u.kg.to(u.M_sun), \
-                self.Apre*u.m.to(u.R_sun), self.Apost*u.m.to(u.R_sun), self.epre, self.epost, self.d*u.m.to(u.Mpc), \
-                self.R*u.m.to(u.kpc), self.R_proj*u.m.to(u.kpc), self.galcosth, self.galphi, \
-                self.Vkick*u.m.to(u.km), self.phi, self.costh, self.omega, self.vphi, self.vcosth, \
-                self.Tmerge*u.s.to(u.Gyr), self.Rmerge*u.m.to(u.kpc), self.Rmerge_proj*u.m.to(u.kpc), self.Vfinal*u.m.to(u.km), \
-                self.Vx_final*u.m.to(u.km), self.Vy_final*u.m.to(u.km), self.Vz_final*u.m.to(u.km), self.flag]
+        data = [self.Mcomp*u.kg.to(u.M_sun), \
+                self.Mns*u.kg.to(u.M_sun), \
+                self.Mhe*u.kg.to(u.M_sun), \
+                self.Apre*u.m.to(u.R_sun), \
+                self.Apost*u.m.to(u.R_sun), \
+                self.epre, \
+                self.epost, \
+                self.distance*u.m.to(u.Mpc), \
+                self.R*u.m.to(u.kpc), \
+                self.R_proj*u.m.to(u.kpc), \
+                self.galcosth, \
+                self.galphi, \
+                self.Vkick*u.m.to(u.km), \
+                self.phi, \
+                self.costh, \
+                self.omega, \
+                self.vphi, \
+                self.vcosth, \
+                self.Tmerge*u.s.to(u.Gyr), \
+                self.Rmerge*u.m.to(u.kpc), \
+                self.Rmerge_proj*u.m.to(u.kpc), \
+                self.Vfinal*u.m.to(u.km), \
+                self.Vx_final*u.m.to(u.km), \
+                self.Vy_final*u.m.to(u.km), \
+                self.Vz_final*u.m.to(u.km), \
+                self.flag]
         return data
 
 
     def save_evolution(self, filename):
         '''
-        If called, will save the evolution of a given system for plotting orbital trajectory through galaxy
+        If called, will save the evolution of a given "successful" system for plotting orbital trajectory through galaxy
         Format: [t, X, Y, Z, Vx, Vy, Vz]
         The initial values are saved as the first item of the file
         '''

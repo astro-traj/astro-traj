@@ -59,15 +59,16 @@ def parse_commandline():
     parser.add_argument('-ST', '--save-trajectories', action="store_true", help="Use this flag to save the trajcetories of successful binaries for plotting and animation purposes. Default is None")
 
     # data information
-    parser.add_argument('-o', '--offset', type=float, help="Offset from center of galaxy of event. In kpc, unless telescope is specified, then in arcseconds", required=True)
+    parser.add_argument('-o', '--offset', type=float, default=None, help="Offset from center of galaxy of event. In kpc, unless telescope is specified, then in arcseconds. Default=None")
     parser.add_argument('-oe', '--offset-uncer', type=float, default=None, help="Standard uncertainty on the offset measurement. In kpc, unless telescope is specified, then in arcseconds. Default=None")
-    parser.add_argument('-r', '--effective-radius', type=float, help="Effective radius (kpc)", required=True)
+    parser.add_argument('-r', '--effective-radius', type=float, default=None, help="Effective radius (kpc). Default=None")
     parser.add_argument('-m', '--stellar-mass', type=float, default=None, help="Stellar Mass (log Msun). Default=None")
     parser.add_argument('-z', '--redshift', type=float, default=None, help="Redshift. Default=None")
     parser.add_argument('-d', '--distance', type=float, default=None, help="Distance to the galaxy (Mpc). Default=None")
     parser.add_argument('-g', '--galaxy', type=str, default=None, help="Name of galaxy that is pulled from the dictionaries in constr_dict.py. Default=None")
     parser.add_argument('-t', '--telescope', type=str, default=None, help="Name of telescope in dictionaries in constr_dict.py from which offset and offset uncertainty are calculated. Default=None")
     parser.add_argument('-s', '--samples', help="Path to posterior samples. Default=None")
+    parser.add_argument('--grb', help="Name of GRB in sGRB.txt to perform analysis on. Default=None")
 
     # sampling information
     parser.add_argument('--Apre_samp', type=str, default='uniform', help="Specify sampling procedure for initial semi-major axis. Default=uniform")
@@ -79,7 +80,7 @@ def parse_commandline():
 
     return args
 
-def main(offset, offset_uncer, r_eff, stellar_mass, redshift, distance, samples, galaxy_name, telescope):
+def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     """
     Main function. Samples parameters, implements kicks, and sees whether the systems is a 'successful' merger
     by merging at the proper projected distance.
@@ -101,13 +102,13 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift, distance, samples,
 
     c = constants.c.value*units.m.to(units.km)   # km/s
     # Info about the neutron stars, either from GW posteriors or inferred from galactic DNSs
-    NS = constr_dict.NS_masses(samples)
+    NS = constr_dict.NS_masses(args.samples)
 
     # Info about the galaxy, either from galaxy dict or user input
-    Galaxy = constr_dict.galaxy(r_eff, h, stellar_mass=stellar_mass, redshift=redshift, distance=distance, galaxy_name=galaxy_name)
+    Galaxy = constr_dict.galaxy(r_eff, h, stellar_mass=stellar_mass, redshift=redshift, distance=args.distance, galaxy_name=args.galaxy)
 
     # Uncertainty in the offset measurement, either measured or derived from angular resolution of telescope
-    Offset = constr_dict.offset(offset, distance, offset_uncer, telescope)
+    Offset = constr_dict.offset(offset, args.distance, offset_uncer, args.telescope)
 
     # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
     gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], Galaxy['distance'], h, rcut=30)
@@ -132,7 +133,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift, distance, samples,
     print "\nSampling binary parameters..."
     
     # Sample NS masses (Msun)
-    Mcomp_dist, Mns_dist = samp.sample_masses(args.Mns_samp, samples, size=Nsys)
+    Mcomp_dist, Mns_dist = samp.sample_masses(args.Mns_samp, args.samples, size=Nsys)
 
     # Sample pre-SN SMA (Rsun)
     Apre_dist = samp.sample_Apre(Amin=0.1, Amax=10.0, method=args.Apre_samp, size=Nsys)
@@ -276,7 +277,29 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift, distance, samples,
     # print maximum energy difference to check for conservation of energy
     print '\nFinished! Maximum energy difference between initial post-SN energy and final energy: %.20f' % dEfrac
 
+
+# MAIN FUNCTINON
 if __name__ == '__main__':
     args = parse_commandline()
-    main(args.offset, args.offset_uncer, args.effective_radius, args.stellar_mass, args.redshift, args.distance, args.samples, args.galaxy, args.telescope)
+
+    # save a few of the command-line variables
+    offset = args.offset
+    offset_uncer = args.offset_uncer
+    effective_radius = args.effective_radius
+    stellar_mass = args.stellar_mass
+    redshift = args.redshift
+
+    # if we read the GRB file
+    if args.grb:
+        GRB_data = pd.read_csv('sGRB.txt')
+        GRB_data = GRB_data.dropna(subset=['log(M*)','r_e','z'])
+        GRB_data.set_index(['GRB'], inplace=True)
+        
+        offset = GRB_data.loc[args.grb, 'deltaR']
+        offset_uncer = GRB_data.loc[args.grb, 'deltaR_err']
+        effective_radius = GRB_data.loc[args.grb, 'r_e']
+        stellar_mass = GRB_data.loc[args.grb, 'log(M*)']
+        redshift = GRB_data.loc[args.grb, 'z']
+
+    main(offset, offset_uncer, effective_radius, stellar_mass, redshift)
 

@@ -291,6 +291,7 @@ if __name__ == '__main__':
 
     # if we read the GRB file
     if args.grb:
+        print '\nUsing information from GRB%s' % (str(args.grb))
         GRB_data = pd.read_csv('sGRB.txt')
         GRB_data = GRB_data.dropna(subset=['log(M*)','r_e','z'])
         GRB_data.set_index(['GRB'], inplace=True)

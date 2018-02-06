@@ -7,9 +7,11 @@
 #MSUB -N LIGOTraj
 #MOAB -W umask=022
 #MSUB -j oe
-#MSUB -d /projects/b1011/mzevin/ligo/progenitor/runs_v8/
+#MSUB -d /projects/b1011/mzevin/progenitor/
+
+Nsys=1000000
 
 module load python
 PATH=/software/Modules/3.2.9/bin:/usr/lib64/qt-3.3/bin:/opt/moab/bin:/opt/moab/sbin:/opt/mam/bin:/opt/mam/sbin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/lpp/mmfs/bin:/opt/ibutils/bin:/opt/torque6/bin:/opt/torque6/sbin:/home/mjz672/bin:/home/mjz672/.local/bin:/home/mjz672/.local/bin
 
-LIGOTraj --effective-radius 2.8 --offset 2.2 --galaxy NGC --telescope ESO --samples /home/mjz672/gw_data/TidalP-0.dat --trials 1000000 --outfile output_${MOAB_JOBARRAYINDEX} --Mhe uniform --Apre uniform --Vkick maxwellian
+LIGOTraj --grb ${1} --trials ${Nsys} --outfile output/${1}_${MOAB_JOBARRAYINDEX}

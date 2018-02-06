@@ -97,10 +97,9 @@ def galaxy(r_eff, h, stellar_mass=None, redshift=None, distance=None, galaxy_nam
         Galaxy['redshift'] = redshift
         Galaxy['distance'] = distance
         Galaxy['R_eff'] = r_eff
-        mstar_mhalo = relation(version='new')
-        Galaxy['Mhalo'] = mstar_mhalo.getMhalo(stellar_mass, redshift)
-        # FIXME: this doesn't seem right, check with Chase
-        Galaxy['Mhalo'] = 10*Galaxy['Mbulge']
+        mstar_mhalo = relation(version='old')
+        # getMhalo takes stellar mass in Msun
+        Galaxy['Mhalo'] = mstar_mhalo.getMhalo(10**stellar_mass, redshift)
 
     return Galaxy
 

@@ -229,6 +229,10 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
         T.SN()
         # if binary is disrupted, move on to next system
         if T.flag == 3:
+            outdata = T.write_data()
+            f = open(args.outfile+'.dat', 'a')
+            f.write(str(outdata)[1:-1]+'\n')
+            f.close()
             continue
 
         # set merger time for trajectory integration, specify Tmin and Tmax in Gyr

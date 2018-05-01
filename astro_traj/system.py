@@ -458,6 +458,7 @@ class System:
         if self.flag == 3:
             self.vphi = np.nan
             self.vcosth = np.nan
+            self.V_sys = np.nan
             self.Tmerge = np.nan
             self.Rmerge = np.nan
             self.Rmerge_proj = np.nan
@@ -505,6 +506,7 @@ class System:
                 self.omega, \
                 self.vphi, \
                 self.vcosth, \
+                self.V_sys, \
                 self.Tmerge*u.s.to(u.Gyr), \
                 self.Rmerge*u.m.to(u.kpc), \
                 self.Rmerge_proj*u.m.to(u.kpc), \

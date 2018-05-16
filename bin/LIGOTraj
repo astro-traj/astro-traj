@@ -29,8 +29,6 @@ from astro_traj.system import System
 from astro_traj import constr_dict
 from astro_traj.sample import Sample
 from astro_traj.galaxy import Hernquist_NFW
-#from astro_traj.plot import Plot
-#from astro_traj.HaloMassClass import relation
 
 
 def parse_commandline():
@@ -111,7 +109,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     Offset = constr_dict.offset(offset, args.distance, offset_uncer, args.telescope)
 
     # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
-    gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], Galaxy['distance'], h, rcut=100)
+    gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], Galaxy['distance'], redshift, h)
     # Initialize sampling function
     samp=Sample(NS, gal)
 
@@ -142,8 +140,8 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     epre_dist = samp.sample_epre(method=args.epre_samp, size=Nsys)
 
     # Sample galactic radius of SN2 (kpc)
-    PDFR = samp.initialize_R()
-    R_dist = samp.sample_R(PDFR, Nsys)
+    R_pdf = samp.initialize_R()
+    R_dist = samp.sample_R(R_pdf, Nsys)
     
     # Sample He-star mass (Msun)
     dumrand = np.random.uniform(0, 1, size=Nsys)   # needed if we do either of the B&P prescriptions

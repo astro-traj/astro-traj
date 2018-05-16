@@ -20,8 +20,7 @@
 """
 
 import numpy as np
-import astropy.units as u
-import astropy.constants as C
+import astropy.units as units
 from scipy.stats import maxwell
 from scipy.integrate import trapz
 from scipy.stats import rv_continuous
@@ -34,14 +33,14 @@ class Hernquist_pdf(rv_continuous):
     '''
     density pdf from Hernquist potential
     '''
-    def __init__(self, abulge, rcut, momtype=1, a=None, b=None, xtol=1e-14,
+    def __init__(self, abulge, momtype=1, a=0, b=None, xtol=1e-14,
                  badvalue=None, name=None, longname=None,
                  shapes=None, extradoc=None, seed=None):
         rv_continuous.__init__(self, momtype, a, b, xtol,
                  badvalue, name, longname,
                  shapes, extradoc, seed)
         self.abulge = abulge
-        self.rcut = rcut
+        self.Rmax = b
 
 
     def _pdf(self, r):
@@ -50,11 +49,12 @@ class Hernquist_pdf(rv_continuous):
         # Leaving Mbulge in there normalizes to Mbulge. Check normalization by printing Hernquist_pdf.cdf(big number)
         # WARNING: Hernquist_pdf.cdf(np.inf) will always return 1 because it assumes we normalized correctly
         def normFac(n):
-            if n ==0:
-                return 1.0
-            else:
-                return ((n+1)**2)/(n**2)
-        Cnorm = normFac(self.rcut/self.abulge)            # NOTE: rcut needs to be in terms of abulge for normalization
+            return ((n+1)**2)/(n**2)
+        # see if a maximum sampling radius has been specified
+        if self.Rmax:
+            Cnorm = normFac(self.Rmax/self.abulge)            # NOTE: Rmax needs to be in terms of abulge for normalization
+        else:
+            Cnorm = 1
         return 2 * Cnorm*r * self.abulge * (self.abulge + r)**(-3)
 
 class BeniaminiKick_pdf(rv_continuous):
@@ -97,13 +97,17 @@ class BeniaminiMhe_pdf(rv_continuous):
 
 
 class Sample:
-    def __init__(self, NS, gal):   # default rcut=0 does not truncate the distributions (i.e., they extend to infinity)
+    def __init__(self, NS, gal, Rmax=None):   # default rcut=0 does not truncate the distributions (i.e., they extend to infinity)
         '''
         initialize with values passed to gal
         NOTE: gal contains parameter values with SI units
         '''
-        self.abulge = gal.abulge * u.m.to(u.kpc)
-        self.rcut = gal.rcut * u.m.to(u.kpc)
+        self.abulge = gal.abulge * units.m.to(units.kpc)
+        if Rmax:
+            self.Rmax = Rmax * units.m.to(units.kpc)
+        else:
+            # if Rmax not specified maintain it as None
+            self.Rmax = None
 
         self.m1 = NS['m1']
         self.m2 = NS['m2']
@@ -212,7 +216,7 @@ class Sample:
     # sample helium star mass
     def initialize_Mhe(self,dM0):
         return BeniaminiMhe_pdf(dM0,a=0)
-    def sample_Mhe(self, Mmin, Mmax=5.0, method='uniform', size=None, PDF=None, ECSN_PDF=None, CCSN_PDF=None, irand=None):
+    def sample_Mhe(self, Mmin, Mmax=8.0, method='uniform', size=None, PDF=None, ECSN_PDF=None, CCSN_PDF=None, irand=None):
         '''
         samples He-star mass uniformly between Mns and 8 Msun (BH limit): beniamini2 method selects from two 
         distributions ECS and CCSN. The split is based off the 60/40 split observed in double nurtron stars 
@@ -303,10 +307,10 @@ class Sample:
         samples radial distance from galactic center according to specified potential function
         '''
 
-        if self.rcut == 0:
-            return Hernquist_pdf(abulge=self.abulge, rcut=self.rcut, a=0, name='my_pdf')
+        if self.Rmax:
+            return Hernquist_pdf(abulge=self.abulge, b=self.Rmax, name='my_pdf')
         else:
-            return Hernquist_pdf(abulge=self.abulge, rcut=self.rcut, a=0, b=self.rcut, name='my_pdf')
+            return Hernquist_pdf(abulge=self.abulge, name='my_pdf')
 
 
     def sample_R(self, PDF, Ndraws):

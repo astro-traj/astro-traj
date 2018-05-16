@@ -34,7 +34,7 @@ __all__ = ['Galaxy_Models', 'Hernquist_NFW', 'Miyamoto_Nagai_NFW', 'Belczynski_2
 
 class Galaxy_Models(object):
 
-    def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, distance, h, rcut):
+    def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, distance, redshift, h, rcut=None):
         """
         Galaxy class. Masses in Msun, distances in kpc. Immediately converted to SI.
         """
@@ -43,9 +43,11 @@ class Galaxy_Models(object):
         self.Mhalo = Mhalo*u.Msun.to(u.kg)
         self.R_eff = R_eff*u.kpc.to(u.m)
         self.distance = distance*u.Mpc.to(u.m)
+        self.redshift = redshift
         self.h = h
-        # distance at which we set the potential to drop to 0
-        self.rcut = rcut*u.kpc.to(u.m)
+        # distance at which we set the potential to drop to 0, if not specified set to R_200
+        if rcut:
+            self.rcut = rcut*u.kpc.to(u.m)
         self.G = C.G.value
 
 
@@ -139,9 +141,9 @@ class Hernquist_NFW(Galaxy_Models):
 
 
     """
-    def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, distance, h, rcut):
+    def __init__(self, Mspiral, Mbulge, Mhalo, R_eff, distance, redshift, h, rcut=None):
         # Shared galaxy params
-        Galaxy_Models.__init__(self, Mspiral, Mbulge, Mhalo, R_eff, distance, h, rcut)
+        Galaxy_Models.__init__(self, Mspiral, Mbulge, Mhalo, R_eff, distance, redshift, h, rcut)
         # define parameters that are used in this model
         # relationship between R_effective and abulge from Hernquist 1990 (eq. 38)
         self.abulge = self.R_eff / 1.8153
@@ -151,7 +153,12 @@ class Hernquist_NFW(Galaxy_Models):
 
         # empirical formula for c_200 from Duffy et al. 2008, using a redshift of 0
         def c_200(self, M_200):
-            return 10**(0.76 - 0.1*np.log10(M_200 / ((2e12/self.h) * C.M_sun.value)))
+            if self.redshift < 1:
+                return 10**(0.76 - 0.1*np.log10(M_200 / ((2e12/self.h) * C.M_sun.value)))
+            elif (self.redshift >= 1) & (self.redshift < 2):
+                return 10**(0.63 - 0.08*np.log10(M_200 / ((2e12/self.h) * C.M_sun.value)))
+            elif self.redshift >= 2:
+                return 10**(0.53 - 0.03*np.log10(M_200 / ((2e12/self.h) * C.M_sun.value)))
         # approximate M_200 = M_halo
         self.c = c_200(self, self.Mhalo)
         # R_200 is defined where density falls to 200 times the critical density
@@ -160,6 +167,10 @@ class Hernquist_NFW(Galaxy_Models):
         self.Rs = self.R_200 / self.c
         # from integrating density distribution to R_200
         self.rho0 = self.Mhalo / (4*np.pi*self.Rs**3 * (np.log(1+self.c) - self.c/(1+self.c)))
+
+        # if rcut not specified, set rcut to R_200
+        if not rcut:
+            self.rcut = self.R_200
 
     def Uhalo(self, r):
         """

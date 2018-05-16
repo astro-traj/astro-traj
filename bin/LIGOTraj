@@ -66,7 +66,7 @@ def parse_commandline():
     parser.add_argument('-g', '--galaxy', type=str, default=None, help="Name of galaxy that is pulled from the dictionaries in constr_dict.py. Default=None")
     parser.add_argument('-t', '--telescope', type=str, default=None, help="Name of telescope in dictionaries in constr_dict.py from which offset and offset uncertainty are calculated. Default=None")
     parser.add_argument('-s', '--samples', help="Path to posterior samples. Default=None")
-    parser.add_argument('--grb', help="Name of GRB in sGRB.txt to perform analysis on. Default=None")
+    parser.add_argument('--grb', help="Name of GRB in sGRBs.txt to perform analysis on. Default=None")
 
     # sampling information
     parser.add_argument('--Apre_samp', type=str, default='uniform', help="Specify sampling procedure for initial semi-major axis. Default=uniform")
@@ -294,7 +294,7 @@ if __name__ == '__main__':
     # if we read the GRB file
     if args.grb:
         print '\nUsing information from GRB%s' % (str(args.grb))
-        GRB_data = pd.read_csv('sGRB.txt')
+        GRB_data = pd.read_csv('sGRBs.txt')
         GRB_data = GRB_data.dropna(subset=['log(M*)','r_e','z'])
         GRB_data.set_index(['GRB'], inplace=True)
         

@@ -94,7 +94,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     4: Energy conservation requirement not met
     """
 
-    print "\nInitializing galaxy and reading inputs..."
+    print("\nInitializing galaxy and reading inputs...")
     # set cosmology (Riess=0.73, Planck=0.679) [h = H0/(100 km/s/Mpc)]
     h = 0.679
 
@@ -128,8 +128,8 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     dEfrac = 0.0
 
     # Initialize random draws for some parameters based on number of trials
-    print "\nSampling binary parameters..."
-    
+    print("\nSampling binary parameters...")
+
     # Sample NS masses (Msun)
     Mcomp_dist, Mns_dist = samp.sample_masses(args.Mns_samp, args.samples, size=Nsys)
 
@@ -142,7 +142,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     # Sample galactic radius of SN2 (kpc)
     R_pdf = samp.initialize_R()
     R_dist = samp.sample_R(R_pdf, Nsys)
-    
+
     # Sample He-star mass (Msun)
     dumrand = np.random.uniform(0, 1, size=Nsys)   # needed if we do either of the B&P prescriptions
     PDFMhe, ECSN_PDFMhe, CCSN_PDFMhe = None, None, None
@@ -167,13 +167,13 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
 
         Mns, Mcomp = 1.097*np.ones(R_dist.size), 1.713*np.ones(R_dist.size)
         Mhe, Apre = 1.5*np.ones(R_dist.size), 2.0*np.ones(R_dist.size)
-    
-    
 
-    # Do the evolution! 
-    print "\nStarting the evolution of sampled binaries!"
+
+
+    # Do the evolution!
+    print("\nStarting the evolution of sampled binaries!")
     for R, Mcomp, Mns, Apre, epre, Mhe, Vkick in zip(R_dist, Mcomp_dist, Mns_dist, Apre_dist, epre_dist, Mhe_dist, Vkick_dist):
-        
+
         # initialize System class with pertinent parameters
         T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, Vkick, sys_flag=args.sys_flag)
         '''
@@ -196,7 +196,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
         if T.sys_flag in ['radial', 'tangential']:
             if R>Galaxy['offset']:continue
             T.SN()
-            T.flag=9 
+            T.flag=9
             if T.sys_flag == 'radial':
                 T.X0,T.Y0,T.Z0=T.R,0.,0.
                 T.Vx0,T.Vy0,T.Vz0 = T.V_sys,0.,0.
@@ -220,8 +220,8 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
                     f.close()
                     break
             continue
-                
-            
+
+
 
         # implement a SN kick to the system, and check to see if binary is disrupted
         T.SN()
@@ -277,7 +277,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
 
 
     # print maximum energy difference to check for conservation of energy
-    print '\nFinished! Maximum energy difference between initial post-SN energy and final energy: %.20f' % dEfrac
+    print('\nFinished! Maximum energy difference between initial post-SN energy and final energy: %.20f' % dEfrac)
 
 
 # MAIN FUNCTINON
@@ -293,11 +293,11 @@ if __name__ == '__main__':
 
     # if we read the GRB file
     if args.grb:
-        print '\nUsing information from GRB%s' % (str(args.grb))
+        print('\nUsing information from GRB%s' % str(args.grb))
         GRB_data = pd.read_csv('sGRBs.txt')
         GRB_data = GRB_data.dropna(subset=['log(M*)','r_e','z'])
         GRB_data.set_index(['GRB'], inplace=True)
-        
+
         offset = GRB_data.loc[args.grb, 'deltaR']
         offset_uncer = GRB_data.loc[args.grb, 'deltaR_err']
         effective_radius = GRB_data.loc[args.grb, 'r_e']

@@ -69,6 +69,7 @@ install_requires = [
     'corner',
     'matplotlib',
     'pandas',
+    'h5py',
 ]
 tests_require = [
     'pytest'

@@ -66,7 +66,6 @@ install_requires = [
     'numpy',
     'scipy',
     'astropy',
-    'corner',
     'matplotlib',
     'pandas',
     'h5py',

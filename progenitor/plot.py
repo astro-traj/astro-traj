@@ -851,18 +851,6 @@ class Plot:
         plt.savefig('Vsys_hist.png')
 
 
-    def corner_plot(self, tlow, thigh):
-        params = ['Vkick', 'Mhe', 'Apre', 'Apost', 'R', 'Rmerge', 'Tmerge']
-        reduced_df = self.data[params]
-        if tlow:
-            reduced_df = reduced_df[reduced_df['Tmerge'] > tlow]
-        if thigh:
-            reduced_df = reduced_df[reduced_df['Tmerge'] < thigh]
-        reduced = np.asarray(reduced_df)
-        corner.corner(reduced, bins=25, labels=params, show_titles=True, quantiles=[0.1,0.9], range=[.99]*len(params), plot_contours=True)
-        plt.savefig('corner.png')
-
-
     def Vkick_Mhe_pdf(self, x_param='Vkick', y_param='Mhe', c_param=None):
         fig = plt.figure()
 

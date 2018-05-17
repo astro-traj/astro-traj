@@ -21,7 +21,7 @@ In order to accomplish this, one would need to load in properities of the galaxy
 
     >>> Galaxy = constr_dict.galaxy(galaxy_name, samples, r_eff, offset, h)
 
-This is done using :meth:`~astro_traj.constr_dict.galaxy`. In addition to creating a dictionary of galaxy properities, we must assume a Galaxy model for this galaxy. The current model that is implemented and works is Hernquist :meth:`~astro_traj.galaxy.Hernquist_NFW`.::
+This is done using :meth:`~progenitor.constr_dict.galaxy`. In addition to creating a dictionary of galaxy properities, we must assume a Galaxy model for this galaxy. The current model that is implemented and works is Hernquist :meth:`~astro_traj.galaxy.Hernquist_NFW`.::
 
     >>> gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], h, rcut=100)
 
@@ -69,7 +69,7 @@ In the executable, all of the sampling is done as such::
 
 Component and Secondary Mass
 ============================
-:meth:`~astro_traj.sample.Sample.sample_masses`
+:meth:`~progenitor.sample.Sample.sample_masses`
 
 The available methods for sampling are 'gaussian', 'mean', 'median', or 'posterior'::
 
@@ -79,9 +79,9 @@ The posterior method is used by default. This simply means that we draw samples 
 
 .. plot::
 
-    >>> from astro_traj.galaxy import Hernquist_NFW
-    >>> from astro_traj import constr_dict
-    >>> from astro_traj.sample import Sample
+    >>> from progenitor.galaxy import Hernquist_NFW
+    >>> from progenitor import constr_dict
+    >>> from progenitor.sample import Sample
     >>> import numpy as np
     >>> from matplotlib import use
     >>> use('agg')
@@ -122,7 +122,7 @@ The posterior method is used by default. This simply means that we draw samples 
 
 Distance
 ========
-:meth:`~astro_traj.sample.Sample.sample_distance`
+:meth:`~progenitor.sample.Sample.sample_distance`
 
 The default method is median (i.e. the median value from the Gravitational Wave parameter estimation pdf of distance. Again, this value is critical in calculating the uncertainity in the observed offset and can be circumvented by smartly chosen inflated error bars in the observed of set::
 
@@ -130,9 +130,9 @@ The default method is median (i.e. the median value from the Gravitational Wave 
 
 .. plot::
 
-    >>> from astro_traj.galaxy import Hernquist_NFW
-    >>> from astro_traj import constr_dict
-    >>> from astro_traj.sample import Sample
+    >>> from progenitor.galaxy import Hernquist_NFW
+    >>> from progenitor import constr_dict
+    >>> from progenitor.sample import Sample
     >>> import numpy as np
     >>> from matplotlib import use
     >>> use('agg')
@@ -164,7 +164,7 @@ The default method is median (i.e. the median value from the Gravitational Wave 
 
 Pre Supernova Semi Major Axis
 =============================
-:meth:`~astro_traj.sample.Sample.sample_Apre`
+:meth:`~progenitor.sample.Sample.sample_Apre`
 
 The available methods for sampling are 'uniform' and 'log'. This value is the pre-supernova semi major axis.::
 
@@ -172,9 +172,9 @@ The available methods for sampling are 'uniform' and 'log'. This value is the pr
 
 .. plot::
 
-    >>> from astro_traj.galaxy import Hernquist_NFW
-    >>> from astro_traj import constr_dict
-    >>> from astro_traj.sample import Sample
+    >>> from progenitor.galaxy import Hernquist_NFW
+    >>> from progenitor import constr_dict
+    >>> from progenitor.sample import Sample
     >>> import numpy as np
     >>> from matplotlib import use
     >>> use('agg')
@@ -201,7 +201,7 @@ The available methods for sampling are 'uniform' and 'log'. This value is the pr
 Pre Supernova eccentricity
 ==========================
 Because we assume circular orbits, we assume that the eccentricity of the system pre second supernova is neglible (set to 0 here), but do account for effects of eccentricity post second supernova.
-:meth:`~astro_traj.sample.Sample.sample_epre`
+:meth:`~progenitor.sample.Sample.sample_epre`
 
 The available method for sampling is 'circularized'::
 
@@ -210,9 +210,9 @@ The available method for sampling is 'circularized'::
 
 .. plot::
 
-    >>> from astro_traj.galaxy import Hernquist_NFW
-    >>> from astro_traj import constr_dict
-    >>> from astro_traj.sample import Sample
+    >>> from progenitor.galaxy import Hernquist_NFW
+    >>> from progenitor import constr_dict
+    >>> from progenitor.sample import Sample
     >>> import numpy as np
     >>> from matplotlib import use
     >>> use('agg')
@@ -236,16 +236,16 @@ The available method for sampling is 'circularized'::
 
 Initialize Off Set From Galactic Center
 =======================================
-We create a custom distribution to sample the intiial galactic offset of the pre second supernova system. The r_eff is used to control sampling at galactic offsets that are unrealistically far away from the center of the galaxy (i.e. we expect less binaries to form super far away from the galactic center and moreover some initial offsets may in fact be outside the plausible "diameter" of the galaxy. To initialize this PDF, we use :meth:`~astro_traj.sample.Sample.initialize_R`, to sample some number of outcomes from this PDF we use :meth:`~astro_traj.sample.Sample.sample_R`::
+We create a custom distribution to sample the intiial galactic offset of the pre second supernova system. The r_eff is used to control sampling at galactic offsets that are unrealistically far away from the center of the galaxy (i.e. we expect less binaries to form super far away from the galactic center and moreover some initial offsets may in fact be outside the plausible "diameter" of the galaxy. To initialize this PDF, we use :meth:`~progenitor.sample.Sample.initialize_R`, to sample some number of outcomes from this PDF we use :meth:`~astro_traj.sample.Sample.sample_R`::
 
     >>> PDFR = samp.initialize_R()
     >>> R_dist = samp.sample_R(PDFR, Nsys) # (kpc)
 
 .. plot::
 
-    >>> from astro_traj.galaxy import Hernquist_NFW
-    >>> from astro_traj import constr_dict
-    >>> from astro_traj.sample import Sample
+    >>> from progenitor.galaxy import Hernquist_NFW
+    >>> from progenitor import constr_dict
+    >>> from progenitor.sample import Sample
     >>> import numpy as np
     >>> from matplotlib import use
     >>> use('agg')
@@ -269,8 +269,8 @@ We create a custom distribution to sample the intiial galactic offset of the pre
 
 Mass of Pre Supernova Helium Star
 =================================
-:meth:`~astro_traj.sample.Sample.initialize_Mhe`
-:meth:`~astro_traj.sample.Sample.sample_Mhe`::
+:meth:`~progenitor.sample.Sample.initialize_Mhe`
+:meth:`~progenitor.sample.Sample.sample_Mhe`::
 
 Available methods include 'power', 'uniform', 'beniamini2'.
 
@@ -283,9 +283,9 @@ Available methods include 'power', 'uniform', 'beniamini2'.
 
 .. plot::
 
-    >>> from astro_traj.galaxy import Hernquist_NFW
-    >>> from astro_traj import constr_dict
-    >>> from astro_traj.sample import Sample
+    >>> from progenitor.galaxy import Hernquist_NFW
+    >>> from progenitor import constr_dict
+    >>> from progenitor.sample import Sample
     >>> import numpy as np
     >>> from matplotlib import use
     >>> use('agg')
@@ -319,8 +319,8 @@ Available methods include 'power', 'uniform', 'beniamini2'.
 
 Supernova Kick Velocity
 =======================
-:meth:`~astro_traj.sample.Sample.initialize_Vkick`
-:meth:`~astro_traj.sample.Sample.sample_Vkick`
+:meth:`~progenitor.sample.Sample.initialize_Vkick`
+:meth:`~progenitor.sample.Sample.sample_Vkick`
 
 Available methods include 'maxwellian', 'uniform', 'beniamini2'.
 
@@ -331,9 +331,9 @@ Available methods include 'maxwellian', 'uniform', 'beniamini2'.
 
 .. plot::
 
-    >>> from astro_traj.galaxy import Hernquist_NFW
-    >>> from astro_traj import constr_dict
-    >>> from astro_traj.sample import Sample
+    >>> from progenitor.galaxy import Hernquist_NFW
+    >>> from progenitor import constr_dict
+    >>> from progenitor.sample import Sample
     >>> import numpy as np
     >>> from matplotlib import use
     >>> use('agg')
@@ -365,7 +365,7 @@ Available methods include 'maxwellian', 'uniform', 'beniamini2'.
 ********************************
 Creating and Evolving the System
 ********************************
-Now that we have successfully sampled a number of initial conditions for our pre-Supernova binary, we can create the :class:`~astro_traj.system.System`::
+Now that we have successfully sampled a number of initial conditions for our pre-Supernova binary, we can create the :class:`~progenitor.system.System`::
 
     >>> # initialize System class with pertinent parameters
     >>> T=System(gal, R, Mns, Mcomp, Mhe, Apre, epre, d, Vkick, sys_flag=args.sys_flag)
@@ -378,7 +378,7 @@ The very first thing that you have to do is take the initial conditions of your 
 
 System Resulting from Supernova of Helium Star
 ----------------------------------------------
-:meth:`~astro_traj.system.System.SN`
+:meth:`~progenitor.system.System.SN`
 
 We utilize `Kalogera 1996 <http://iopscience.iop.org/article/10.1086/177974/meta>`_ in order to determine the properities of the post supernova binary (such as eccentricity of the system post supernova, additional mass etc.) From the documnetation, We use Eq 1, 3, 4, and 34: giving Vr, Apost, epost, and (Vsx,Vsy,Vsz), respectively. Also see Fig 1 in that paper for coordinate system. After calculating this post super system values we check for whether this system would be expected to result in the successful creation of a binary. We check 4 separate equations detailed in `Willems et al 2002 <http://iopscience.iop.org/article/10.1086/429557/meta>`_. Specifically, we use eq 21, 22, 23, 24, 25, 26 for checks of SN survival::
 
@@ -386,10 +386,10 @@ We utilize `Kalogera 1996 <http://iopscience.iop.org/article/10.1086/177974/meta
 
 .. plot::
 
-    >>> from astro_traj.galaxy import Hernquist_NFW
-    >>> from astro_traj import constr_dict
-    >>> from astro_traj.sample import Sample
-    >>> from astro_traj.system import System
+    >>> from progenitor.galaxy import Hernquist_NFW
+    >>> from progenitor import constr_dict
+    >>> from progenitor.sample import Sample
+    >>> from progenitor.system import System
     >>> import numpy as np
     >>> from matplotlib import use
     >>> use('agg')
@@ -491,7 +491,7 @@ In order to forward model successfully created binaries through the galaxy, one 
 
 Time to Merger Peters 1964
 --------------------------
-:meth:`~astro_traj.system.System.setTmerge`
+:meth:`~progenitor.system.System.setTmerge`
 Checked against `Peters 1964 <https://doi.org/10.1103/PhysRev.136.B1224>`_::
 
     >>> # set merger time for trajectory integration, specify Tmin and Tmax in Gyr
@@ -500,10 +500,10 @@ Checked against `Peters 1964 <https://doi.org/10.1103/PhysRev.136.B1224>`_::
 Distance of Binary From Center
 ------------------------------
 First, you randomly select from initial XYZ direction.
-:meth:`~astro_traj.system.System.setXYZ_0`
-Next, you randomly select an initial velocity direction :meth:`~astro_traj.system.System.setVxyz_0`:
+:meth:`~progenitor.system.System.setXYZ_0`
+Next, you randomly select an initial velocity direction :meth:`~progenitor.system.System.setVxyz_0`:
 Then based on Tmerge you solve an ODE and evolve XYZ until merger.
-:meth:`~astro_traj.system.System.doMotion`::
+:meth:`~progenitor.system.System.doMotion`::
 
     >>> # choose random location on sphere of radius R
     >>> T.setXYZ_0()
@@ -516,7 +516,7 @@ Then based on Tmerge you solve an ODE and evolve XYZ until merger.
 
 Check that conservation of energy is obeyed
 -------------------------------------------
-:meth:`~astro_traj.system.System.energy_check`
+:meth:`~progenitor.system.System.energy_check`
 Calculate the initial Energy of the system and the final energy and make sure it is conserved to within some small error (0.001)::
 
     >>> # check for energy conservation, and hold onto highest offset
@@ -527,7 +527,7 @@ Calculate the initial Energy of the system and the final energy and make sure it
 Checking Offset
 ===============
 Finally, You have a location for where in the galaxy your system merged. It is in XYZ so project onto XY plane and check if it matches to the observed off set (with some uncertainty in that offset accounted for).
-:meth:`~astro_traj.system.System.check_success`
+:meth:`~progenitor.system.System.check_success`
 
 
 **********************************************
@@ -578,7 +578,7 @@ For tangential, X.Y.Z and Vz,Vy,Vz are calculated as normal [Code](https://githu
         T.Tmerge = 0.1*u.Gyr.to(u.s)
         T.doMotion()
 
-but Vsys is [Code](https://github.com/astro-traj/astro-traj/blob/master/astro_traj/system.py#L299)::
+but Vsys is [Code](https://github.com/astro-traj/astro-traj/blob/master/progenitor/system.py#L299)::
 
     #Rotate by omega while keeping perpendicular to R
     Vp_rot = (Vp*np.cos(omega)) + (np.cross(k,Vp)*np.sin(omega))
@@ -588,7 +588,7 @@ but Vsys is [Code](https://github.com/astro-traj/astro-traj/blob/master/astro_tr
 
 And in the SN kick calculated here  the kick vector is set as follows:
 
-[Code](https://github.com/astro-traj/astro-traj/blob/master/astro_traj/system.py#L129)::
+[Code](https://github.com/astro-traj/astro-traj/blob/master/progenitor/system.py#L129)::
 
     if self.sys_flag == 'radial_simple' or self.sys_flag == 'tangential' or self.sys_flag == 'radial_simple2' or self.sys_flag == 'tangential2':
         Vkx,Vky,Vkz=0,-Vkick,0

@@ -20,7 +20,7 @@
 """
 
 from astropy.table import Table
-from astro_traj.HaloMassClass import relation
+from progenitor.HaloMassClass import relation
 import astropy.units as units
 import astropy.constants as constants
 import numpy as np

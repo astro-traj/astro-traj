@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) Michael Zevin (2017)
 #
-# This file is part of astro_traj
+# This file is part of progenitor
 #
 # gwemlightcurves is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

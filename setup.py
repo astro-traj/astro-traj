@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with hveto.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Setup the astro_traj package
+"""Setup the progenitor package
 """
 
 from __future__ import print_function
@@ -32,8 +32,8 @@ import os.path
 from setuptools import (setup, find_packages)
 
 # set basic metadata
-PACKAGENAME = 'astro_traj'
-DISTNAME = 'astro_traj'
+PACKAGENAME = 'progenitor'
+DISTNAME = 'progenitor'
 AUTHOR = 'Scott Coughlin'
 AUTHOR_EMAIL = 'scott.coughlin@ligo.org'
 LICENSE = 'GPLv3'

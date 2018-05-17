@@ -24,11 +24,11 @@ use('agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from astro_traj import __version__
-from astro_traj.system import System
-from astro_traj import constr_dict
-from astro_traj.sample import Sample
-from astro_traj.galaxy import Hernquist_NFW
+from progenitor import __version__
+from progenitor.system import System
+from progenitor import constr_dict
+from progenitor.sample import Sample
+from progenitor.galaxy import Hernquist_NFW
 
 
 def parse_commandline():

@@ -1,4 +1,4 @@
-#!/software/anaconda2/bin/python
+#!/software/anaconda3/bin/python
 
 # ---- Import standard modules to the python path.
 import os

@@ -394,8 +394,8 @@ class System:
         # uncertainty in offset is 0.5 kpc by default
         # assume that the observer is looking down the z-axis (so the offset will be the projection of the binary on the x-y plane)
         """
-        offset = offset*u.kpc.to(u.m)
-        uncer = uncer*u.kpc.to(u.m)
+        offset = offset*units.kpc.to(units.m)
+        uncer = uncer*units.kpc.to(units.m)
         Rmerge_proj = np.sqrt(self.X[-1]**2 + self.Y[-1]**2)
 
         self.Rmerge_proj = Rmerge_proj
@@ -404,8 +404,8 @@ class System:
 
         if (offset-uncer < Rmerge_proj < offset+uncer):
             self.flag = 1      # successful binary!
-            print 'GW analog produced! R_SN:%f R_Merge:%f R_Merge_proj:%f, Vkick:%f Mhe:%f' % \
-                        (self.R/C.kpc.value, self.Rmerge/C.kpc.value, self.Rmerge_proj/C.kpc.value, self.Vkick/1000, self.Mhe/C.M_sun.value)
+            print('GW analog produced! R_SN:%f R_Merge:%f R_Merge_proj:%f, Vkick:%f Mhe:%f' % \
+                        (self.R*units.m.to(units.kpc), self.Rmerge*units.m.to(units.kpc), self.Rmerge_proj*units.m.to(units.kpc), self.Vkick*units.m.to(units.km), self.Mhe*units.kg.to(units.Msun)))
 
 
 

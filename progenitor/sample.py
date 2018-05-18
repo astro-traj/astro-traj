@@ -186,6 +186,7 @@ class Sample:
         '''
         samples semi-major axis uniformly (method='uniform', default) or uniformly in log (method='log')
         '''
+
         if method=='uniform':
             A_samp = np.random.uniform(Amin, Amax, size)
             return A_samp
@@ -214,16 +215,19 @@ class Sample:
     # sample helium star mass
     def initialize_Mhe(self,dM0):
         return BeniaminiMhe_pdf(dM0,a=0)
-    def sample_Mhe(self, Mmin, Mmax=8.0, method='uniform', size=None, PDF=None, ECSN_PDF=None, CCSN_PDF=None, irand=None):
+    def sample_Mhe(self, Mns, Mmax=8.0, method='uniform', PDF=None, ECSN_PDF=None, CCSN_PDF=None, irand=None):
         '''
         samples He-star mass uniformly between Mns and 8 Msun (BH limit): beniamini2 method selects from two 
         distributions ECS and CCSN. The split is based off the 60/40 split observed in double nurtron stars 
         in our galaxy laid out in Fig 2: https://arxiv.org/pdf/1510.03111.pdf#figure.2 method: powerlaw
         '''
-        
+
         if method=='uniform':
-            Mhe_samp = np.random.uniform(Mmin, Mmax, size=size)
-            return Mhe_samp
+            Mhe_samp=[]
+
+            for Mmin in Mns:
+                Mhe_samp.append(np.random.uniform(Mmin, Mmax))
+            return np.asarray(Mhe_samp)
 
         if method=='power':
             Mhe_samp=[]
@@ -231,24 +235,26 @@ class Sample:
             def pdf(m):
                 return m**-2.35
 
-            def invpdf(ii,mmin):
-                    return (1./((mmin**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
-            for i in range(len(Mmin)):
-                xx=np.linspace(Mmin[i],Mmax,1000)
+            def invpdf(ii,m):
+                    return (1./((m**-1.3)-(ii*1.3/Anorm)))**(1./1.3)
+            for Mmin in Mns:
+                xx=np.linspace(Mmin,Mmax,1000)
                 A1=trapz(pdf(xx),x=xx)
                 Anorm=1./A1
 
                 II=np.random.uniform(0,1)
-                Mhe_samp.append(invpdf(II,Mmin[i]))
+                Mhe_samp.append(invpdf(II,Mmin))
             return np.array(Mhe_samp)
             
         if method=='beniamini_1pop':
-            dMhe_samp = PDF.rvs(size=size)
-            return dMhe_samp+Mmin
+            dMhe_samp = []
+            for Mmin in Mns:
+                dMhe_samp.append(PDF.rvs())
+            return np.asarray(dMhe_samp)+Mmin
 
         if method=='beniamini_2pop':
             dMhe_samp = []
-            for i in range(size):
+            for Mmin in Mns:
                 if dumrand[i]<0.6:
                     dMhe_samp.append(ECSPDF.rvs())
                 else:

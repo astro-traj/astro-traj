@@ -135,7 +135,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     elif args.Mhe_samp == 'beniamini_2pop':
         ECSN_PDFMhe = samp.initialize_Mhe(0.1)
         CCSN_PDFMhe = samp.initialize_Mhe(1.0)
-    Mhe_dist = samp.sample_Mhe(Mmin=Mns_dist.min(), method=args.Mhe_samp, size=Nsys, PDF=PDFMhe, ECSN_PDF=ECSN_PDFMhe, CCSN_PDF=CCSN_PDFMhe, irand=dumrand)
+    Mhe_dist = samp.sample_Mhe(Mns=Mns_dist, method=args.Mhe_samp, PDF=PDFMhe, ECSN_PDF=ECSN_PDFMhe, CCSN_PDF=CCSN_PDFMhe, irand=dumrand)
 
     # Sample SN kick velocity
     ECSN, CCSN = samp.initialize_Vkick()

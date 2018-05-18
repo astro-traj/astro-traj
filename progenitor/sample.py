@@ -229,7 +229,7 @@ class Sample:
                 Mhe_samp.append(np.random.uniform(Mmin, Mmax))
             return np.asarray(Mhe_samp)
 
-        if method=='power':
+        if method=='powerlaw':
             Mhe_samp=[]
             
             def pdf(m):

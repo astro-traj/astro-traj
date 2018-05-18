@@ -1,38 +1,34 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) Scott Coughlin (2017)
+# Copyright (C) Michael Zevin (2018)
 #
-# This file is part of astro-traj.
+# This file is part of the progenitor package.
 #
-# astro-traj is free software: you can redistribute it and/or modify
+# progenitor is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# astro-traj is distributed in the hope that it will be useful,
+# progenitor is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with astro-traj.  If not, see <http://www.gnu.org/licenses/>.
+# along with progenitor.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Places system described by Mhe, Mcomp, Apre, epre and position r(R,galphi,galcosth) in galaxy model gal
-Applies SNkick Vkick and mass loss Mhe-Mns to obtain Apost, epost, and SN-imparted systemic velocity V    
-"""
+__author__ = ['Michael Zevin <michael.zevin@ligo.org>', 'Chase Kimball <charles.kimball@ligo.org']
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+__all__ = ['System']
+
 
 import numpy as np
 import pandas as pd
-import astropy.units as u
-import astropy.constants as C
-from scipy.integrate import ode
-from scipy.stats import maxwell
-from scipy.stats import rv_continuous
-from scipy.integrate import quad
 
-__author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
-__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
-__all__ = ['System']
+import astropy.units as units
+import astropy.constants as constants
+
+from scipy.integrate import ode
+from scipy.integrate import quad
 
 class System:
     """
@@ -55,12 +51,12 @@ class System:
         """
     
         # Convert inputs to SI
-        Mhe = Mhe*u.M_sun.to(u.kg)
-        Mcomp = Mcomp*u.M_sun.to(u.kg)
-        Mns = Mns*u.M_sun.to(u.kg)
-        Apre = Apre*u.R_sun.to(u.m)
-        Vkick = Vkick*u.km.to(u.m)
-        R = R*u.kpc.to(u.m)
+        Mhe = Mhe*units.M_sun.to(units.kg)
+        Mcomp = Mcomp*units.M_sun.to(units.kg)
+        Mns = Mns*units.M_sun.to(units.kg)
+        Apre = Apre*units.R_sun.to(units.m)
+        Vkick = Vkick*units.km.to(units.m)
+        R = R*units.kpc.to(units.m)
 
         self.sys_flag = sys_flag
         
@@ -113,7 +109,7 @@ class System:
 
         self.flag=0      # set standard flag        
 
-        G = C.G.value
+        G = constants.G.value
         Mhe, Mcomp, Mns, Apre, Vkick, costh, phi = self.Mhe, self.Mcomp, self.Mns, self.Apre, self.Vkick, self.costh, self.phi
 
 
@@ -323,7 +319,7 @@ class System:
         Calculate the inspiral time for the binary after the supernova using formulae from `Peters 1964 <https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224>`_
         """
         m1=self.Mns; m2=self.Mcomp
-        G = C.G.value; c = C.c.value
+        G = constants.G.value; c = constants.c.value
 
         # useful definition for following equations:
         beta = (64./5)*(G**3)*m1*m2*(m1+m2) / (c**5)
@@ -341,13 +337,13 @@ class System:
         self.Tmerge = Tmerge
 
         # see if binary inspiral time is longer than threshold (10 Gyr) or shorter than minimum time (0 for now)
-        Tmin = Tmin*u.Gyr.to(u.s)         # seconds
-        Tmax = Tmax*u.Gyr.to(u.s)         # seconds
+        Tmin = Tmin*units.Gyr.to(units.s)         # seconds
+        Tmax = Tmax*units.Gyr.to(units.s)         # seconds
         if (Tmerge > Tmax or Tmerge < Tmin):
             self.flag=2   # binary does not meet inspiral time requirements
 
 
-    def doMotion(self, backend='dopri5', NSTEPS=1e13, MAX_STEP=u.year.to(u.s)*1e6, RTOL=1e-11):
+    def doMotion(self, backend='dopri5', NSTEPS=1e13, MAX_STEP=units.year.to(units.s)*1e6, RTOL=1e-11):
         """ 
         Second order equation ma=-grad(U) converted to 2 sets of first order equations, with
         e.g. x1 = x
@@ -488,32 +484,32 @@ class System:
             self.Vy_final=np.nan
             self.Vz_final=np.nan
 
-        data = [self.Mcomp*u.kg.to(u.M_sun), \
-                self.Mns*u.kg.to(u.M_sun), \
-                self.Mhe*u.kg.to(u.M_sun), \
-                self.Apre*u.m.to(u.R_sun), \
-                self.Apost*u.m.to(u.R_sun), \
+        data = [self.Mcomp*units.kg.to(units.M_sun), \
+                self.Mns*units.kg.to(units.M_sun), \
+                self.Mhe*units.kg.to(units.M_sun), \
+                self.Apre*units.m.to(units.R_sun), \
+                self.Apost*units.m.to(units.R_sun), \
                 self.epre, \
                 self.epost, \
-                self.distance*u.m.to(u.Mpc), \
-                self.R*u.m.to(u.kpc), \
-                self.R_proj*u.m.to(u.kpc), \
+                self.distance*units.m.to(units.Mpc), \
+                self.R*units.m.to(units.kpc), \
+                self.R_proj*units.m.to(units.kpc), \
                 self.galcosth, \
                 self.galphi, \
-                self.Vkick*u.m.to(u.km), \
+                self.Vkick*units.m.to(units.km), \
                 self.phi, \
                 self.costh, \
                 self.omega, \
                 self.vphi, \
                 self.vcosth, \
-                self.V_sys, \
-                self.Tmerge*u.s.to(u.Gyr), \
-                self.Rmerge*u.m.to(u.kpc), \
-                self.Rmerge_proj*u.m.to(u.kpc), \
-                self.Vfinal*u.m.to(u.km), \
-                self.Vx_final*u.m.to(u.km), \
-                self.Vy_final*u.m.to(u.km), \
-                self.Vz_final*u.m.to(u.km), \
+                self.V_sys*units.m.to(units.km), \
+                self.Tmerge*units.s.to(units.Gyr), \
+                self.Rmerge*units.m.to(units.kpc), \
+                self.Rmerge_proj*units.m.to(units.kpc), \
+                self.Vfinal*units.m.to(units.km), \
+                self.Vx_final*units.m.to(units.km), \
+                self.Vy_final*units.m.to(units.km), \
+                self.Vz_final*units.m.to(units.km), \
                 self.flag]
         return data
 

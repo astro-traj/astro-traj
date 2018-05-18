@@ -1,32 +1,30 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) Scott Coughlin (2017)
+# Copyright (C) Michael Zevin (2018)
 #
-# This file is part of astro-traj.
+# This file is part of the progenitor package.
 #
-# astro-traj is free software: you can redistribute it and/or modify
+# progenitor is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# astro-traj is distributed in the hope that it will be useful,
+# progenitor is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with astro-traj.  If not, see <http://www.gnu.org/licenses/>.
+# along with progenitor.  If not, see <http://www.gnu.org/licenses/>.
 
-"""`sample`
-"""
+__author__ = ['Michael Zevin <michael.zevin@ligo.org>', 'Chase Kimball <charles.kimball@ligo.org']
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+
 
 from astropy.table import Table
-from progenitor.HaloMassClass import relation
+from progenitor.HaloMassClass import Relation
 import astropy.units as units
 import astropy.constants as constants
 import numpy as np
-
-__author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
-__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
 def NS_masses(samples=None):
     """
@@ -97,7 +95,7 @@ def galaxy(r_eff, h, stellar_mass=None, redshift=None, distance=None, galaxy_nam
         Galaxy['redshift'] = redshift
         Galaxy['distance'] = distance
         Galaxy['R_eff'] = r_eff
-        mstar_mhalo = relation(version='old')
+        mstar_mhalo = Relation(version='old')
         # getMhalo takes stellar mass in Msun
         Galaxy['Mhalo'] = mstar_mhalo.getMhalo(10**stellar_mass, redshift)
 

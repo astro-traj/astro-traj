@@ -6,27 +6,13 @@ import pdb
 import argparse
 
 import numpy as np
-
-import astropy.units as units
-import astropy.constants as constants
-
 import pandas as pd
 
-import h5py
-
-from scipy.integrate import ode
-from scipy.stats import maxwell
-from scipy.stats import rv_continuous
-from scipy.integrate import quad
-
-from matplotlib import use
-use('agg')
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import astropy.units as units
 
 from progenitor import __version__
-from progenitor.system import System
 from progenitor import constr_dict
+from progenitor.system import System
 from progenitor.sample import Sample
 from progenitor.galaxy import Hernquist_NFW
 
@@ -35,11 +21,12 @@ def parse_commandline():
     """Parse the arguments given on the command-line.
     """
     parser = argparse.ArgumentParser(description="""
-    Main function. Samples parameters, implements kicks, and sees whether the systems is a 'successful' merger
-    by merging at the proper projected distance.
+    "The question isn't *can* we kick it. The question is *how must* we kick it." --paraphrased from A Tribe Called Quest
 
-    Writes to csv file in following format:
-    [M2, Mns, Mhe, Apre, Apost, epre, epost, R, galcosth, galphi, Vkick, Tmerge, Rmerge, Rmerge_proj, Vfinal, flag]
+    This is the main function, which samples parameters, implements kicks, and sees whether the systems is a 'successful' merger by merging at the proper projected distance.
+
+    Writes to csv file with the following headers:
+    ['Mcomp', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', 'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Vsys', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'Vx_final', 'Vy_final', 'Vz_final', 'flag']
 
     Flag description:
     0: Binary doesn't merge at the proper projected distance
@@ -80,11 +67,7 @@ def parse_commandline():
 
 def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     """
-    Main function. Samples parameters, implements kicks, and sees whether the systems is a 'successful' merger
-    by merging at the proper projected distance.
-
-    Writes to csv file in following format:
-    [M2, Mns, Mhe, Apre, Apost, epre, epost, R, galcosth, galphi, Vkick, Tmerge, Rmerge, Rmerge_proj, Vfinal, flag]
+    Main function. Samples parameters, implements kicks, and sees whether the systems is a 'successful' merger by merging at the proper projected distance.
 
     Flag descriptions:
     0: Binary doesn't merge at the proper projected distance
@@ -98,7 +81,6 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     # set cosmology (Riess=0.73, Planck=0.679) [h = H0/(100 km/s/Mpc)]
     h = 0.679
 
-    c = constants.c.value*units.m.to(units.km)   # km/s
     # Info about the neutron stars, either from GW posteriors or inferred from galactic DNSs
     NS = constr_dict.NS_masses(args.samples)
 
@@ -110,9 +92,9 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
 
     # Initialize potential with galactic parameters, choose from one of the definied potentials in galaxy class
     gal=Hernquist_NFW(Galaxy['Mspiral'], Galaxy['Mbulge'], Galaxy['Mhalo'], Galaxy['R_eff'], Galaxy['distance'], redshift, h)
+
     # Initialize sampling function
     samp=Sample(NS, gal)
-
 
     # Create empty output file
     output_columns=['Mcomp', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', 'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Vsys', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'Vx_final', 'Vy_final', 'Vz_final', 'flag']
@@ -125,6 +107,8 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     ####### MAIN LOOP #######
     #########################
     Nsys=args.trials
+
+    # Track energy conservation
     dEfrac = 0.0
 
     # Initialize random draws for some parameters based on number of trials
@@ -194,7 +178,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
 
         # if the radial or tangential flag is thrown, perform modified evolution
         if T.sys_flag in ['radial', 'tangential']:
-            if R>Galaxy['offset']:continue
+            if R>Galaxy['offset']: continue
             T.SN()
             T.flag=9
             if T.sys_flag == 'radial':
@@ -203,7 +187,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
             elif T.sys_flag == 'tangential':
                 T.setXYZ_0()
                 T.setVxyz_0()
-            T.Tmerge = 0.1*u.Gyr.to(u.s)
+            T.Tmerge = 0.1*units.Gyr.to(units.s)
             T.doMotion()
 
             for i in range(len(T.X)):
@@ -211,7 +195,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
                     TrueOffset = T.X[i]
                 elif T.sys_flag == 'tangential':
                     TrueOffset = np.sqrt((T.X[i]**2)+(T.Y[i]**2)+(T.Z[i]**2))
-                if TrueOffset > Galaxy['offset']*u.kpc.to(u.m):
+                if TrueOffset > Galaxy['offset']*units.kpc.to(u.m):
                     T.Tmerge = T.t[i]
                     T.Rmerge = T.X[i]
                     outdata = T.write_data()

@@ -1,8 +1,35 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) Michael Zevin (2018)
+#
+# This file is part of the progenitor package.
+#
+# progenitor is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# progenitor is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with progenitor.  If not, see <http://www.gnu.org/licenses/>.
+
+__author__ = ['Michael Zevin <michael.zevin@ligo.org>', 'Chase Kimball <charles.kimball@ligo.org']
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+__all__ = ['Relation']
+
+
 import numpy as np
 from scipy.optimize import brentq
 
 
-class relation():
+class Relation():
+    """
+    Utilizes Stellar Mass -- Halo Mass relation for inferring dark matter halo masses
+    """
+
     def __init__(self,version = 'old'):
 
         if version == 'old':
@@ -43,6 +70,9 @@ class relation():
         
 
     def getMhalo(self,mstar,z):
+        """
+        Gets dark matter halo mass
+        """
         def BCE(exp_m):
             mhalo=10.**exp_m
             Mtot = mhalo + mstar
@@ -55,6 +85,4 @@ class relation():
             
         mexp = brentq(BCE,1,40)
         return 10.**mexp
-        
-        
         

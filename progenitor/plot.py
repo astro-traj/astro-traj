@@ -1,40 +1,42 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) Michael Zevin (2017)
+# Copyright (C) Michael Zevin (2018)
 #
-# This file is part of progenitor
+# This file is part of the progenitor package.
 #
-# gwemlightcurves is free software: you can redistribute it and/or modify
+# progenitor is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# gwemlightcurves is distributed in the hope that it will be useful,
+# progenitor is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with gwemlightcurves.  If not, see <http://www.gnu.org/licenses/>.
+# along with progenitor.  If not, see <http://www.gnu.org/licenses/>.
 
-"""`plotting`
-"""
+__author__ = ['Michael Zevin <michael.zevin@ligo.org>', 'Chase Kimball <charles.kimball@ligo.org']
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+__all__ = ['Plot']
+
+
 import constr_dict
-import numpy as np
-import pandas as pd
-import astropy.units as u
-import astropy.constants as C
-from matplotlib import use
-use('agg')
 import galaxy
 from sample import Sample
+
+import numpy as np
+import pandas as pd
+from scipy.stats import maxwell
+
+import astropy.units as units
+import astropy.constants as constants
+
+from matplotlib import use
+use('agg')
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.mlab import griddata
-from scipy.stats import maxwell
-import pdb
-
-__author__ = 'Michael Zevin <michael.zevin@ligo.org>'
-__all__ = ['Plotting']
 
 class Plot:
     def __init__(self, samples, galaxy_name, offset, r_eff, telescope, suptitle, output=None, flatten=False):

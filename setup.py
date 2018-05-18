@@ -68,7 +68,6 @@ install_requires = [
     'astropy',
     'matplotlib',
     'pandas',
-    'h5py',
 ]
 tests_require = [
     'pytest'

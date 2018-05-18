@@ -1,33 +1,32 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) Scott Coughlin (2017)
+# Copyright (C) Michael Zevin (2018)
 #
-# This file is part of astro-traj.
+# This file is part of the progenitor package.
 #
-# astro-traj is free software: you can redistribute it and/or modify
+# progenitor is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# astro-traj is distributed in the hope that it will be useful,
+# progenitor is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with astro-traj.  If not, see <http://www.gnu.org/licenses/>.
+# along with progenitor.  If not, see <http://www.gnu.org/licenses/>.
 
-"""`sample`
-"""
+__author__ = ['Michael Zevin <michael.zevin@ligo.org>', 'Chase Kimball <charles.kimball@ligo.org']
+__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+__all__ = ['Sample', 'Hernquist_pdf', 'BeniaminiKick_pdf', 'BeniaminiMhe_pdf']
 
 import numpy as np
 import astropy.units as units
+
 from scipy.stats import maxwell
 from scipy.integrate import trapz
 from scipy.stats import rv_continuous
 from astropy.table import Table
-__author__ = ['Chase Kimball <charles.kimball@ligo.org>', 'Michael Zevin <michael.zevin@ligo.org>']
-__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
-__all__ = ['Sample', 'Hernquist_pdf']
 
 class Hernquist_pdf(rv_continuous):
     '''
@@ -41,7 +40,6 @@ class Hernquist_pdf(rv_continuous):
                  shapes, extradoc, seed)
         self.abulge = abulge
         self.Rmax = b
-
 
     def _pdf(self, r):
         # Divided by Mbulge. Turns mass density function to probability density function.
@@ -59,7 +57,7 @@ class Hernquist_pdf(rv_continuous):
 
 class BeniaminiKick_pdf(rv_continuous):
     '''
-    vkick pdf from Beniamini
+    vkick pdf from Beniamini & Piran 2016
     '''
     def __init__(self,Vk0,sigvk = np.arcsinh(.5),momtype=1, a=None, b=None, xtol=1e-14,
                  badvalue=None, name=None, longname=None,
@@ -78,7 +76,7 @@ class BeniaminiKick_pdf(rv_continuous):
         
 class BeniaminiMhe_pdf(rv_continuous):
     '''
-    vkick pdf from Beniamini
+    vkick pdf from Beniamini & Piran 2016
     '''
     def __init__(self,dM0,sigdM = np.arcsinh(.5),momtype=1, a=None, b=None, xtol=1e-14,
                  badvalue=None, name=None, longname=None,

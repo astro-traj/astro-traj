@@ -404,7 +404,7 @@ class System:
 
         if (offset-uncer < Rmerge_proj < offset+uncer):
             self.flag = 1      # successful binary!
-            print('GW analog produced! R_SN:%f R_Merge:%f R_Merge_proj:%f, Vkick:%f Mhe:%f' % \
+            print('Offset match produced! R_SN:%f R_Merge:%f R_Merge_proj:%f, Vkick:%f Mhe:%f' % \
                         (self.R*units.m.to(units.kpc), self.Rmerge*units.m.to(units.kpc), self.Rmerge_proj*units.m.to(units.kpc), self.Vkick*units.m.to(units.km), self.Mhe*units.kg.to(units.Msun)))
 
 
@@ -419,7 +419,7 @@ class System:
         Mbulge = self.gal.Mbulge
         abulge = self.gal.abulge
         Mns, Mcomp = self.Mns, self.Mcomp
-        G = C.G.value
+        G = constants.G.value
         Ubulge = self.gal.Ubulge
         Uhalo = self.gal.Uhalo
 

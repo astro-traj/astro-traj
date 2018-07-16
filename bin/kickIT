@@ -58,7 +58,7 @@ def parse_commandline():
     # sampling information
     parser.add_argument('--Apre_samp', type=str, default='uniform', help="Specify sampling procedure for initial semi-major axis. Default=uniform")
     parser.add_argument('--Mhe_samp', type=str, default='uniform', help="Specify sampling procedure for helium star mass. Default=uniform")
-    parser.add_argument('--Vkick_samp', type=str, default='maxwellian', help="Specify sampling procedure for kick velocity. Default=maxwellian")
+    parser.add_argument('--Vkick_samp', type=str, default='hobbs', help="Specify sampling procedure for kick velocity. Default=hobbs")
     parser.add_argument('--Mns_samp', type=str, default='gaussian', help="Specify sampling procedure for NS masses, Can use posteriors from GW observations (if you provide valid) samples argumentor or draw from a distribtuion tuned to the properties tuned to galactic DNS systems. Default=gaussian")
     parser.add_argument('--epre_samp', type=str, default='circularized', help="Specify sampling procedure for initial eccentricity. Default=circularized")
     args = parser.parse_args()

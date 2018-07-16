@@ -129,9 +129,8 @@ class Sample:
             m2 = samples['m2_source'][np.random.randint(0,len(samples['m2_source']),size)]
             return m1, m2
         
-        # Error? Is self spelled incorrectly on purpose?
         elif method=='mean':
-            m1 = sefl.m1
+            m1 = self.m1
             m2 = self.m2
             return m1, m2
 
@@ -146,30 +145,29 @@ class Sample:
             return m1, m2
 
         else:
-	    try:
-		if ', ' in method:
-                    a, b = method.split(', ')
-		    mass1_num = max(float(a), float(b))
-		    mass2_num = min(float(a), float(b))
-		    if mass1_num <= 0 or mass2_num <= 0:
-		        raise ValueError("One of the given masses is negative.")
-		    m1 = np.arange(size, dtype = float)
-		    m2 = np.arange(size, dtype = float)
-		    m1 = np.full_like(m1, mass1_num)
-		    m2 = np.full_like(m2, mass2_num)
-		    return m1, m2
-		else:
-		    if float(method) <= 0:
-			raise ValueError("One of the given masses is negative")
-		    m1 = np.arange(size, dtype = float)
-		    m2 = np.arange(size, dtype = float)
-		    m1= np.full_like(m1, float(method))
-	  	    m2= np.full_like(m2, float(method))
-		    return m1, m2
+            try:
+                if ',' in method:
+                    a, b = method.split(',')
+                    mass1_num = max(float(a), float(b))
+                    mass2_num = min(float(a), float(b))
+                    if mass1_num <= 0 or mass2_num <= 0:
+                        raise ValueError("One of the input NS masses is not a positive number.")
+                    m1 = np.arange(size, dtype = float)
+                    m2 = np.arange(size, dtype = float)
+                    m1 = np.full_like(m1, mass1_num)
+                    m2 = np.full_like(m2, mass2_num)
+                    return m1, m2
+                else:
+                    if float(method) <= 0:
+                        raise ValueError("One of the input NS masses is not a positive number.")
+                    m1 = np.arange(size, dtype = float)
+                    m2 = np.arange(size, dtype = float)
+                    m1= np.full_like(m1, float(method))
+                    m2= np.full_like(m2, float(method))
+                    return m1, m2
 
-	    except ValueError:
-	        print("Given value is not of type float")	
-            #raise ValueError("Undefined sampling method: %s" % method)
+            except ValueError:
+                raise ValueError("Undefined neutron star mass sampling method: '%s'." % method)
 
     # sample distance from PE
     def sample_distance(self, samples=None, method='median', size=None):
@@ -201,7 +199,7 @@ class Sample:
             return d
 
         else: 
-            raise ValueError("Undefined sampling method: %s" % method)
+            raise ValueError("Undefined distance sampling method: '%s'." % method)
 
 
     # sample semi-major axis
@@ -220,20 +218,19 @@ class Sample:
             return A_samp
 	    
         else: 
-	    try:
-	        num = float(method)
-		if num <= 0:
-		    raise ValueError("Given number is not positive.")
-		A_samp = np.arange(size, dtype = np.float)
-		A_samp = np.full_like(A_samp, num)
-		return A_samp
-	    except ValueError:
-	        print("Given method is not a fixed float value") 
-            #raise ValueError("Undefined sampling method: %s" % method)
+            try:
+                num = float(method)
+                if num <= 0:
+                    raise ValueError("Input semimajor axis is not a positive number.")
+                A_samp = np.arange(size, dtype = np.float)
+                A_samp = np.full_like(A_samp, num)
+                return A_samp
+            except ValueError:
+                raise ValueError("Undefined semimajor axis sampling method: '%s'." % method)
 
 
     # sample eccentricity
-    def sample_epre(self, method='circularized',  size=None):
+    def sample_epre(self, method='circularized', size=None):
         '''
         samples initial eccentricity (for now, assume circularized)
         '''
@@ -242,7 +239,7 @@ class Sample:
             return e_samp
 
         else: 
-            raise ValueError("Undefined sampling method: %s" % method)
+            raise ValueError("Undefined eccentricity sampling method: '%s'." % method)
 
 
     # sample helium star mass
@@ -296,17 +293,16 @@ class Sample:
             return np.array(dMhe_samp)+Mmin
         
         else:
-	    try:
-	        Mhe_samp = []
-	        mhe = float(method)
-		if mhe <= 0:
-		    raise ValueError ("Given mass is not positive.")		
-		for Mmin in Mns:
-		    Mhe_samp.append(mhe)
-		return np.array(Mhe_samp)
-	    except ValueError:
-	        print("undefined sampling method %s" % method) 
-            #raise ValueError("Undefined sampling method: %s" % method)
+            try:
+                Mhe_samp = []
+                mhe = float(method)
+                if mhe <= 0:
+                    raise ValueError("Input helium star mass is not a positive number.")
+                for Mmin in Mns:
+                    Mhe_samp.append(mhe)
+                return np.array(Mhe_samp)
+            except ValueError:
+                raise ValueError("Undefined helium star mass sampling method: '%s'." % method)
 
 
     # sample kick velocities
@@ -348,14 +344,14 @@ class Sample:
             return Vkick_samp
 
         else:
-	    try:
-		num = float(method)
-		if num < 0:
-		    raise ValueError("Kick rms cannot be negative.")
-		Vkick_samp = maxwell.rvs(loc=0, scale = num, size = size)
-		return Vkick_samp
-	    except ValueError:
-		print("Undefined sampling method: %s" % method) 
+            try:
+                num = float(method)
+                if num < 0:
+                    raise ValueError("Scale parameter for maxwellian kick distribution must not be negative.")
+                Vkick_samp = maxwell.rvs(loc=0, scale = num, size = size)
+                return Vkick_samp
+            except ValueError:
+                raise ValueError("Undefined natal kick sampling method: '%s'." % method)
 
 
     # Sample distance from galaxy center

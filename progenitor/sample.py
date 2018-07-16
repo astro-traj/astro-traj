@@ -119,16 +119,17 @@ class Sample:
         Samples m1 and m2 from posterior distrbution of your favorite PE run.
         Samples from the posterior samples by default. 
         Can specify methods 'gaussian', 'mean', or 'median' to sample using other sampling methods
+	Can also input one number to assign it as both Mcomp and Mns or input 2 numbers in the form 'num1, num2' and the larger number will be assigned to Mcompand the smaller to Mns
         """
 
         if samples:
             samples = Table.read(samples, format='ascii')
-
         if method=='posterior':
             m1 = samples['m1_source'][np.random.randint(0,len(samples['m1_source']),size)]
             m2 = samples['m2_source'][np.random.randint(0,len(samples['m2_source']),size)]
             return m1, m2
-
+        
+        # Error? Is self spelled incorrectly on purpose?
         elif method=='mean':
             m1 = sefl.m1
             m2 = self.m2
@@ -144,9 +145,31 @@ class Sample:
             m2 = np.random.normal(self.m2, self.m2_sigma, size)
             return m1, m2
 
-        else: 
-            raise ValueError("Undefined sampling method: %s" % method)
+        else:
+	    try:
+		if ', ' in method:
+                    a, b = method.split(', ')
+		    mass1_num = max(float(a), float(b))
+		    mass2_num = min(float(a), float(b))
+		    if mass1_num <= 0 or mass2_num <= 0:
+		        raise ValueError("One of the given masses is negative.")
+		    m1 = np.arange(size, dtype = float)
+		    m2 = np.arange(size, dtype = float)
+		    m1 = np.full_like(m1, mass1_num)
+		    m2 = np.full_like(m2, mass2_num)
+		    return m1, m2
+		else:
+		    if float(method) <= 0:
+			raise ValueError("One of the given masses is negative")
+		    m1 = np.arange(size, dtype = float)
+		    m2 = np.arange(size, dtype = float)
+		    m1= np.full_like(m1, float(method))
+	  	    m2= np.full_like(m2, float(method))
+		    return m1, m2
 
+	    except ValueError:
+	        print("Given value is not of type float")	
+            #raise ValueError("Undefined sampling method: %s" % method)
 
     # sample distance from PE
     def sample_distance(self, samples=None, method='median', size=None):
@@ -185,6 +208,7 @@ class Sample:
     def sample_Apre(self, Amin, Amax, method='uniform', size=None):
         '''
         samples semi-major axis uniformly (method='uniform', default) or uniformly in log (method='log')
+	can also input a fixed value 
         '''
 
         if method=='uniform':
@@ -194,9 +218,18 @@ class Sample:
         elif method=='log':
             A_samp = 10**np.random.uniform(np.log10(Amin), np.log10(Amax), size)
             return A_samp
-
+	    
         else: 
-            raise ValueError("Undefined sampling method: %s" % method)
+	    try:
+	        num = float(method)
+		if num <= 0:
+		    raise ValueError("Given number is not positive.")
+		A_samp = np.arange(size, dtype = np.float)
+		A_samp = np.full_like(A_samp, num)
+		return A_samp
+	    except ValueError:
+	        print("Given method is not a fixed float value") 
+            #raise ValueError("Undefined sampling method: %s" % method)
 
 
     # sample eccentricity
@@ -220,7 +253,8 @@ class Sample:
         samples He-star mass uniformly between Mns and 8 Msun (BH limit): beniamini2 method selects from two 
         distributions ECS and CCSN. The split is based off the 60/40 split observed in double nurtron stars 
         in our galaxy laid out in Fig 2: https://arxiv.org/pdf/1510.03111.pdf#figure.2 method: powerlaw
-        '''
+	you can also input a fixed value as a string that is handled by the else statement       
+	 '''
 
         if method=='uniform':
             Mhe_samp=[]
@@ -261,8 +295,18 @@ class Sample:
                     dMhe_samp.append(CCSPDF.rvs())
             return np.array(dMhe_samp)+Mmin
         
-        else: 
-            raise ValueError("Undefined sampling method: %s" % method)
+        else:
+	    try:
+	        Mhe_samp = []
+	        mhe = float(method)
+		if mhe <= 0:
+		    raise ValueError ("Given mass is not positive.")		
+		for Mmin in Mns:
+		    Mhe_samp.append(mhe)
+		return np.array(Mhe_samp)
+	    except ValueError:
+	        print("undefined sampling method %s" % method) 
+            #raise ValueError("Undefined sampling method: %s" % method)
 
 
     # sample kick velocities
@@ -270,10 +314,11 @@ class Sample:
         ECSN = BeniaminiKick_pdf(5.0,a=0)
         CCSN = BeniaminiKick_pdf(158.0,a=0)
         return ECSN, CCSN
-    def sample_Vkick(self, scale=265, Vmin=0, Vmax=2000, method='maxwellian', size=None, Mhe=None, ECSN_PDF=None, CCSN_PDF=None, irand=None):
+    def sample_Vkick(self, Vmin=0, Vmax=2000, method='hobbs', size=None, Mhe=None, ECSN_PDF=None, CCSN_PDF=None, irand=None):
         '''
         sample kick velocity from Maxwellian (Hobbs 2005, default) or uniformly (Wong 2010) or Beniamini (2016): https://arxiv.org/pdf/1510.03111.pdf#equation.4.7: beniamini2 method selects from two distributions ECS and CCSN. The splitis based off the 60/40 split observed in double nurtron stars in our galaxy laid out in Fig 2: https://arxiv.org/pdf/1510.03111.pdf#figure.2
-        '''
+	Isaac modified so that you can now input hobbs to have a scale of 265, which is the default, or any number greater than 0 so that a maxwellian will be used with the input as the scale factor       
+ 	'''
         if method=='beniamini_1pop':
             Vkick_samp=[]
             for i in range(len(Mhe)):
@@ -291,18 +336,26 @@ class Sample:
                 else:
                     Vkick_samp.append(CCSN_PDF.rvs())
             return np.array(Vkick_samp)
-                    
+        
+
             
-        if method=='maxwellian':
-            Vkick_samp = maxwell.rvs(loc=0, scale=scale, size=size)
+        if method=='hobbs':
+            Vkick_samp = maxwell.rvs(loc=0, scale=265, size=size)
             return Vkick_samp
 
-        elif method=='uniform':
+        if method=='uniform':
             Vkick_samp = np.random.uniform(Vmin, Vmax, size=size)
             return Vkick_samp
 
-        else: 
-            raise ValueError("Undefined sampling method: %s" % method)
+        else:
+	    try:
+		num = float(method)
+		if num < 0:
+		    raise ValueError("Kick rms cannot be negative.")
+		Vkick_samp = maxwell.rvs(loc=0, scale = num, size = size)
+		return Vkick_samp
+	    except ValueError:
+		print("Undefined sampling method: %s" % method) 
 
 
     # Sample distance from galaxy center

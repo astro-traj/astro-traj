@@ -138,7 +138,10 @@ class System:
         VSz = Mns*Vkz/Mtot
         V_sys = np.sqrt((VSx**2)+(VSy**2)+(VSz**2))
 
-        self.Apost, self.epost, self.VSx, self.VSy, self.VSz, self.V_sys, self.Vr = Apost, epost, VSx, VSy, VSz, V_sys, Vr
+        # calculate the tilt of the orbital plane from the SN (Eq 5, Kalogera 1996)
+        tilt = np.arccos((Vky + Vr)/np.sqrt((Vky+Vr)**2 + Vkz**2))
+
+        self.Apost, self.epost, self.VSx, self.VSy, self.VSz, self.V_sys, self.Vr, self.tilt = Apost, epost, VSx, VSy, VSz, V_sys, Vr, tilt
         
         def SNCheck(self):
             """
@@ -499,6 +502,7 @@ class System:
                 self.Vkick*units.m.to(units.km), \
                 self.phi, \
                 self.costh, \
+                self.tilt, \
                 self.omega, \
                 self.vphi, \
                 self.vcosth, \

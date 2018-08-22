@@ -98,7 +98,7 @@ def main(offset, offset_uncer, r_eff, stellar_mass, redshift):
     samp=Sample(NS, gal)
 
     # Create empty output file
-    output_columns=['Mcomp', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', 'Vkick', 'phi', 'costh', 'omega', 'vphi', 'vcosth', 'Vsys', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'Vx_final', 'Vy_final', 'Vz_final', 'flag']
+    output_columns=['Mcomp', 'Mns', 'Mhe', 'Apre', 'Apost', 'epre', 'epost', 'd', 'R', 'R_proj', 'galcosth', 'galphi', 'Vkick', 'phi', 'costh', 'tilt', 'omega', 'vphi', 'vcosth', 'Vsys', 'Tmerge', 'Rmerge', 'Rmerge_proj', 'Vfinal', 'Vx_final', 'Vy_final', 'Vz_final', 'flag']
     df = pd.DataFrame([], columns=output_columns)
     df.to_csv(args.outfile+'.dat', sep=',', index=False)
 

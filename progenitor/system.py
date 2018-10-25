@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) Michael Zevin, Charles Kimball (2018)
+# Copyright (C) Michael Zevin, Chase Kimball (2018)
 #
 # This file is part of the progenitor package.
 #
